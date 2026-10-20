@@ -1,0 +1,439 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.admin == true ||
+        request.auth.token.email in ["brbcafeatx@gmail.com"]
+      );
+    }
+
+    function isRegisteredBarista() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/scheduleUsers/$(request.auth.uid));
+    }
+
+    function isValidRedeemUpdate(before, after) {
+      return after.keys().hasOnly(before.keys())
+        && after.phone == before.phone
+        && after.name == before.name
+        && after.type == before.type
+        && after.drinksRemaining == before.drinksRemaining - 1
+        && after.drinksRemaining >= 0
+        && after.drinksToday >= 1
+        && after.drinksToday <= 3;
+    }
+
+    match /bands/{id} {
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.email == request.auth.token.email ||
+        isAdmin()
+      );
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.email == request.auth.token.email ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /admins/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow write: if isAdmin();
+    }
+
+    match /events/{id} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    match /bookings/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    match /invitations/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    match /tipReports/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    match /images/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /posts/{id} {
+      allow read: if resource.data.published == true || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /drinks/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /favoritePlaces/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /communityPosters/{id} {
+      allow read: if resource.data.approved == true;
+      allow write: if isAdmin();
+    }
+
+    match /instagramPosts/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /pressFeatures/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /subscribers/{id} {
+      allow get: if true;
+      allow list: if request.query.limit != null && request.query.limit <= 1;
+      allow update: if (!isSignedIn() && isValidRedeemUpdate(resource.data, request.resource.data))
+                    || isAdmin();
+      allow create, delete: if isAdmin();
+    }
+
+    match /baristas/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+      allow update: if isSignedIn()
+        && !('uid' in resource.data)
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['uid', 'email', 'linkedAt']);
+    }
+
+    match /scheduleUsers/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && userId == request.auth.uid
+        && request.resource.data.uid == request.auth.uid;
+      allow update: if isSignedIn() && userId == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    match /schedules/{scheduleId} {
+      allow read: if isRegisteredBarista() || isAdmin();
+      allow create: if isRegisteredBarista()
+        && request.resource.data.baristaId == request.auth.uid
+        && request.resource.data.shiftType in ['opening', 'closing', 'shared']
+        && request.resource.data.status == 'confirmed';
+      allow update: if (isRegisteredBarista()
+        && resource.data.baristaId == request.auth.uid
+        && request.resource.data.baristaId == request.auth.uid)
+        || isAdmin();
+      allow delete: if (isRegisteredBarista()
+        && resource.data.baristaId == request.auth.uid)
+        || isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    match /baristas/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+      allow update: if isSignedIn()
+        && !('uid' in resource.data)
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['uid', 'email', 'linkedAt']);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // BEGIN brb-acl — acl.brbcoffee-atx.com
+    // Added 2026-08-30 for the ACL Fest volunteer portal.
+    // Everything above this line is untouched. To retire the fest app, delete
+    // from this line down to "END brb-acl" and republish. Nothing else depends
+    // on it.
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function isAclAdmin() {
+      return isAdmin()
+          || (isSignedIn()
+              && exists(/databases/$(database)/documents/aclAdmins/$(request.auth.uid)));
+    }
+
+    // A volunteer's doc id IS their lowercased email — the app relies on this.
+    function myVolunteerId() {
+      return request.auth.token.email.lower();
+    }
+
+    match /aclAdmins/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow write: if false;                    // managed from the Firebase console
+    }
+
+    match /aclConfig/{doc} {
+      allow read: if isSignedIn();
+      allow write: if isAclAdmin();
+    }
+
+    match /aclVolunteers/{id} {
+      allow read: if isSignedIn();
+      allow delete: if isAclAdmin();
+
+      allow create: if isAclAdmin()
+        || (id == myVolunteerId()
+            && request.resource.data.email == id
+            && request.resource.data.uid == request.auth.uid
+            && request.resource.data.status == 'active'
+            && request.resource.data.keys().hasOnly([
+                 'name', 'email', 'phone', 'status', 'uid',
+                 'invitedAt', 'claimedAt', 'selfSignup', 'notes'
+               ]));
+
+      allow update: if isAclAdmin()
+        // First-time uid link only, by the person whose email it is.
+        // Check absence before value: reading a missing field errors, and an
+        // erroring rule denies.
+        || ((!('uid' in resource.data) || resource.data.uid == null)
+            && id == myVolunteerId()
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['uid', 'status', 'claimedAt']));
+    }
+
+    match /aclAvailability/{volunteerId} {
+      allow read: if isSignedIn();
+      allow write: if isAclAdmin() || volunteerId == myVolunteerId();
+    }
+
+    match /aclAssignments/{slotId} {
+      // A position is either untouched, or vacated by the person standing in it.
+      function dropOk(k) {
+        return request.resource.data.positions[k] == resource.data.positions[k]
+            || (resource.data.positions[k] == myVolunteerId()
+                && request.resource.data.positions[k] == null);
+      }
+
+      allow read: if isSignedIn();
+      allow create, delete: if isAclAdmin();
+      allow update: if isAclAdmin()
+        // Four fixed keys, enumerated — rules have no loops.
+        || (isSignedIn()
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['positions', 'updatedAt'])
+            && dropOk('front-left') && dropOk('front-right')
+            && dropOk('back-left')  && dropOk('back-right'));
+    }
+
+    // Read-only view of brb-schedule's rota, so ACL admins can see who is
+    // already committed at the shop on fest days. No write access.
+    match /schedules/{id} {
+      allow read: if isAclAdmin();
+    }
+
+    match /aclDropLog/{id} {
+      allow read: if isAclAdmin();
+      allow create: if isSignedIn()
+                    && request.resource.data.volunteerId == myVolunteerId();
+      allow update, delete: if false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // END brb-acl
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // BEGIN brb-inventory — inventory.brbcoffee-atx.com
+    // Paste this block into the project's live rules, just above the final
+    // closing braces (it relies on isAdmin() defined at the top of that file).
+    // To retire the app, delete from this line down to "END brb-inventory".
+    //
+    // Baristas don't sign in, so the open internet can do exactly two things:
+    //   1. update an item's count / Low-Out flag fields (validated below)
+    //   2. create an "open" request
+    // Everything else — sources, categories, items, pars, orders — is admin-only
+    // (the brb-baristas dashboard, signed in as the admin account).
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function invChanged() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // A timestamp the write touches must be the server's clock, not the client's.
+    function invStampOk(field) {
+      return !invChanged().hasAny([field]) || request.resource.data[field] == request.time;
+    }
+
+    // Optional short name typed on the barista page ("Counting as …").
+    function invNameOk(value) {
+      return value == null || (value is string && value.size() <= 40);
+    }
+
+    function invIsBaristaCountUpdate() {
+      let d = request.resource.data;
+      return invChanged().hasOnly(['onHand', 'flag', 'countedAt', 'countedBy', 'flaggedAt', 'flaggedBy'])
+        && (d.get('onHand', null) == null || (d.onHand is int && d.onHand >= 0 && d.onHand <= 100000))
+        && d.get('flag', null) in [null, 'low', 'out']
+        && invStampOk('countedAt')
+        && invStampOk('flaggedAt')
+        && invNameOk(d.get('countedBy', null))
+        && invNameOk(d.get('flaggedBy', null));
+    }
+
+    function invIsValidNewRequest() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['text', 'requestedBy', 'createdAt', 'status'])
+        && d.keys().hasAll(['text', 'createdAt', 'status'])
+        && d.text is string && d.text.size() > 0 && d.text.size() <= 300
+        && invNameOk(d.get('requestedBy', null))
+        && d.status == 'open'
+        && d.createdAt == request.time;
+    }
+
+    match /inventoryItems/{id} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || invIsBaristaCountUpdate();
+    }
+
+    match /inventoryRequests/{id} {
+      allow read: if true;
+      allow create: if isAdmin() || invIsValidNewRequest();
+      allow update, delete: if isAdmin();
+    }
+
+    match /inventorySources/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /inventoryCategories/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // END brb-inventory
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // BEGIN brb-master-schedule — schedule.brbcoffee-atx.com
+    // Paste this block into the project's live rules, just above the final
+    // closing braces (it relies on isSignedIn(), isAdmin() and
+    // isRegisteredBarista() defined at the top of that file).
+    // To retire the app, delete from this line down to "END brb-master-schedule".
+    //
+    // Baristas sign in on the schedule site; their account is linked to one
+    // baristas/{id} doc, which carries their uid (written once at sign-up by
+    // the existing baristas rule above). A barista may only write records
+    // whose baristaId is that doc. The admin (staff.brbcoffee-atx.com) can
+    // do everything.
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // The signed-in user is the barista with this baristas/{id}.
+    function schedOwns(baristaId) {
+      return isSignedIn()
+        && baristaId is string
+        && get(/databases/$(database)/documents/baristas/$(baristaId)).data.get('uid', null) == request.auth.uid;
+    }
+
+    function schedCanRead() {
+      return isAdmin() || isRegisteredBarista();
+    }
+
+    function schedIsDate(value) {
+      return value is string && value.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+
+    function schedIsShift(value) {
+      return value in ['opening', 'closing', 'shared'];
+    }
+
+    function schedShiftList(value) {
+      return value is list && value.size() <= 3 && value.hasOnly(['opening', 'closing', 'shared']);
+    }
+
+    // One barista per shift: the doc id is `${date}_${shift}`. A barista may
+    // take an empty shift for themselves (create only - a taken shift is an
+    // update, which only the admin can do) and drop their own.
+    match /scheduleShifts/{slotId} {
+      allow read: if schedCanRead();
+      allow create: if isAdmin()
+        || (schedOwns(request.resource.data.baristaId)
+            && request.resource.data.keys().hasOnly(['date', 'shift', 'baristaId', 'baristaName', 'assignedBy', 'createdAt'])
+            && schedIsDate(request.resource.data.date)
+            && schedIsShift(request.resource.data.shift)
+            && slotId == request.resource.data.date + '_' + request.resource.data.shift
+            && request.resource.data.baristaName is string
+            && request.resource.data.createdAt == request.time);
+      allow update: if isAdmin();
+      allow delete: if isAdmin() || schedOwns(resource.data.baristaId);
+    }
+
+    // One barista, one date: off all day, or which shifts are out that day.
+    // id = `${baristaId}_${date}`.
+    match /scheduleUnavailability/{entryId} {
+      allow read: if schedCanRead();
+      allow create, update: if isAdmin()
+        || (schedOwns(request.resource.data.baristaId)
+            && request.resource.data.keys().hasOnly(['baristaId', 'baristaName', 'date', 'allDay', 'cant', 'createdAt'])
+            && schedIsDate(request.resource.data.date)
+            && entryId == request.resource.data.baristaId + '_' + request.resource.data.date
+            && request.resource.data.allDay is bool
+            && schedShiftList(request.resource.data.cant));
+      allow delete: if isAdmin() || schedOwns(resource.data.baristaId);
+    }
+
+    // A barista's usual week. id = baristaId.
+    match /scheduleWeekly/{baristaId} {
+      allow read: if schedCanRead();
+      allow create, update: if isAdmin()
+        || (schedOwns(baristaId)
+            && request.resource.data.baristaId == baristaId
+            && request.resource.data.keys().hasOnly(['baristaId', 'baristaName', 'cant', 'updatedAt'])
+            && request.resource.data.cant is map);
+      allow delete: if isAdmin();
+    }
+
+    // "A barista dropped a shift" - created by the barista who dropped it,
+    // read and handled by the admin.
+    match /scheduleAlerts/{alertId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin()
+        || (schedOwns(request.resource.data.baristaId)
+            && request.resource.data.keys().hasOnly(['type', 'date', 'shift', 'baristaId', 'baristaName', 'createdAt', 'status'])
+            && request.resource.data.type == 'dropped'
+            && request.resource.data.status == 'new'
+            && schedIsDate(request.resource.data.date)
+            && schedIsShift(request.resource.data.shift)
+            && request.resource.data.createdAt == request.time);
+      allow update, delete: if isAdmin();
+    }
+
+    // Default shift hours (doc "hours") and one-day hour changes: admin only.
+    match /scheduleSettings/{docId} {
+      allow read: if schedCanRead();
+      allow write: if isAdmin();
+    }
+
+    match /scheduleShiftTimes/{slotId} {
+      allow read: if schedCanRead();
+      allow write: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // END brb-master-schedule
+    // ═══════════════════════════════════════════════════════════════════════
+
+  }
+}

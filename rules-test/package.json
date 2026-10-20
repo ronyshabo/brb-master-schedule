@@ -1,0 +1,13 @@
+{
+  "name": "brb-master-schedule-rules-test",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "cp ../firestore-live-plus-schedule.rules firestore.rules && firebase emulators:exec --only firestore --project demo-brb \"node rules.test.mjs\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.0",
+    "firebase": "^11.0.0",
+    "firebase-tools": "^13.29.0"
+  }
+}

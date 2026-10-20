@@ -1,0 +1,108 @@
+    // ═══════════════════════════════════════════════════════════════════════
+    // BEGIN brb-master-schedule — schedule.brbcoffee-atx.com
+    // Paste this block into the project's live rules, just above the final
+    // closing braces (it relies on isSignedIn(), isAdmin() and
+    // isRegisteredBarista() defined at the top of that file).
+    // To retire the app, delete from this line down to "END brb-master-schedule".
+    //
+    // Baristas sign in on the schedule site; their account is linked to one
+    // baristas/{id} doc, which carries their uid (written once at sign-up by
+    // the existing baristas rule above). A barista may only write records
+    // whose baristaId is that doc. The admin (staff.brbcoffee-atx.com) can
+    // do everything.
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // The signed-in user is the barista with this baristas/{id}.
+    function schedOwns(baristaId) {
+      return isSignedIn()
+        && baristaId is string
+        && get(/databases/$(database)/documents/baristas/$(baristaId)).data.get('uid', null) == request.auth.uid;
+    }
+
+    function schedCanRead() {
+      return isAdmin() || isRegisteredBarista();
+    }
+
+    function schedIsDate(value) {
+      return value is string && value.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+
+    function schedIsShift(value) {
+      return value in ['opening', 'closing', 'shared'];
+    }
+
+    function schedShiftList(value) {
+      return value is list && value.size() <= 3 && value.hasOnly(['opening', 'closing', 'shared']);
+    }
+
+    // One barista per shift: the doc id is `${date}_${shift}`. A barista may
+    // take an empty shift for themselves (create only - a taken shift is an
+    // update, which only the admin can do) and drop their own.
+    match /scheduleShifts/{slotId} {
+      allow read: if schedCanRead();
+      allow create: if isAdmin()
+        || (schedOwns(request.resource.data.baristaId)
+            && request.resource.data.keys().hasOnly(['date', 'shift', 'baristaId', 'baristaName', 'assignedBy', 'createdAt'])
+            && schedIsDate(request.resource.data.date)
+            && schedIsShift(request.resource.data.shift)
+            && slotId == request.resource.data.date + '_' + request.resource.data.shift
+            && request.resource.data.baristaName is string
+            && request.resource.data.createdAt == request.time);
+      allow update: if isAdmin();
+      allow delete: if isAdmin() || schedOwns(resource.data.baristaId);
+    }
+
+    // One barista, one date: off all day, or which shifts are out that day.
+    // id = `${baristaId}_${date}`.
+    match /scheduleUnavailability/{entryId} {
+      allow read: if schedCanRead();
+      allow create, update: if isAdmin()
+        || (schedOwns(request.resource.data.baristaId)
+            && request.resource.data.keys().hasOnly(['baristaId', 'baristaName', 'date', 'allDay', 'cant', 'createdAt'])
+            && schedIsDate(request.resource.data.date)
+            && entryId == request.resource.data.baristaId + '_' + request.resource.data.date
+            && request.resource.data.allDay is bool
+            && schedShiftList(request.resource.data.cant));
+      allow delete: if isAdmin() || schedOwns(resource.data.baristaId);
+    }
+
+    // A barista's usual week. id = baristaId.
+    match /scheduleWeekly/{baristaId} {
+      allow read: if schedCanRead();
+      allow create, update: if isAdmin()
+        || (schedOwns(baristaId)
+            && request.resource.data.baristaId == baristaId
+            && request.resource.data.keys().hasOnly(['baristaId', 'baristaName', 'cant', 'updatedAt'])
+            && request.resource.data.cant is map);
+      allow delete: if isAdmin();
+    }
+
+    // "A barista dropped a shift" - created by the barista who dropped it,
+    // read and handled by the admin.
+    match /scheduleAlerts/{alertId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin()
+        || (schedOwns(request.resource.data.baristaId)
+            && request.resource.data.keys().hasOnly(['type', 'date', 'shift', 'baristaId', 'baristaName', 'createdAt', 'status'])
+            && request.resource.data.type == 'dropped'
+            && request.resource.data.status == 'new'
+            && schedIsDate(request.resource.data.date)
+            && schedIsShift(request.resource.data.shift)
+            && request.resource.data.createdAt == request.time);
+      allow update, delete: if isAdmin();
+    }
+
+    // Default shift hours (doc "hours") and one-day hour changes: admin only.
+    match /scheduleSettings/{docId} {
+      allow read: if schedCanRead();
+      allow write: if isAdmin();
+    }
+
+    match /scheduleShiftTimes/{slotId} {
+      allow read: if schedCanRead();
+      allow write: if isAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // END brb-master-schedule
+    // ═══════════════════════════════════════════════════════════════════════

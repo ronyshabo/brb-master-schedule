@@ -1,0 +1,126 @@
+name: Deploy brb-master-schedule
+
+# Runs as the container "brb-schedule" on port 3005 - the same name and port the
+# old brb-schedule app used - so Caddy's schedule.brbcoffee-atx.com entry keeps
+# working and the first deploy simply replaces the old app.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate required secrets
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for var_name in FIREBASE_API_KEY FIREBASE_AUTH_DOMAIN FIREBASE_PROJECT_ID \
+                          FIREBASE_STORAGE_BUCKET FIREBASE_MESSAGING_SENDER_ID \
+                          FIREBASE_APP_ID EC2_HOST EC2_USER EC2_SSH_KEY; do
+            if [ -z "${!var_name:-}" ]; then
+              echo "::error::Missing required GitHub secret: ${var_name}"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then exit 1; fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+        run: |
+          set -euo pipefail
+          export DOCKER_BUILDKIT=1
+          tmp_dir="$(mktemp -d)"
+          trap 'rm -rf "$tmp_dir"' EXIT
+
+          printf '%s' "$FIREBASE_API_KEY"          > "$tmp_dir/VITE_FIREBASE_API_KEY"
+          printf '%s' "$FIREBASE_AUTH_DOMAIN"       > "$tmp_dir/VITE_FIREBASE_AUTH_DOMAIN"
+          printf '%s' "$FIREBASE_PROJECT_ID"        > "$tmp_dir/VITE_FIREBASE_PROJECT_ID"
+          printf '%s' "$FIREBASE_STORAGE_BUCKET"    > "$tmp_dir/VITE_FIREBASE_STORAGE_BUCKET"
+          printf '%s' "$FIREBASE_MESSAGING_SENDER_ID" > "$tmp_dir/VITE_FIREBASE_MESSAGING_SENDER_ID"
+          printf '%s' "$FIREBASE_APP_ID"            > "$tmp_dir/VITE_FIREBASE_APP_ID"
+
+          docker build \
+            --secret id=VITE_FIREBASE_API_KEY,src="$tmp_dir/VITE_FIREBASE_API_KEY" \
+            --secret id=VITE_FIREBASE_AUTH_DOMAIN,src="$tmp_dir/VITE_FIREBASE_AUTH_DOMAIN" \
+            --secret id=VITE_FIREBASE_PROJECT_ID,src="$tmp_dir/VITE_FIREBASE_PROJECT_ID" \
+            --secret id=VITE_FIREBASE_STORAGE_BUCKET,src="$tmp_dir/VITE_FIREBASE_STORAGE_BUCKET" \
+            --secret id=VITE_FIREBASE_MESSAGING_SENDER_ID,src="$tmp_dir/VITE_FIREBASE_MESSAGING_SENDER_ID" \
+            --secret id=VITE_FIREBASE_APP_ID,src="$tmp_dir/VITE_FIREBASE_APP_ID" \
+            -t brb-schedule:latest .
+
+      - name: Deploy to AWS EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          EC2_SSH_PORT: ${{ secrets.EC2_SSH_PORT }}
+          EC2_HOST_KEY: ${{ secrets.EC2_HOST_KEY }}
+        run: |
+          set -euo pipefail
+          SSH_PORT="${EC2_SSH_PORT:-2222}"
+          SSH_OPTS="-o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts -o ConnectTimeout=20"
+
+          mkdir -p ~/.ssh
+          printf '%s\n' "$EC2_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          trap 'rm -f ~/.ssh/id_rsa brb-schedule.tar' EXIT
+
+          if [ -n "${EC2_HOST_KEY:-}" ]; then
+            echo "$EC2_HOST_KEY" > ~/.ssh/known_hosts
+          else
+            if ! ssh-keyscan -T 15 -p "$SSH_PORT" -H "$EC2_HOST" >> ~/.ssh/known_hosts; then
+              echo "::error::ssh-keyscan failed. Check EC2_HOST/EC2_SSH_PORT or set EC2_HOST_KEY secret."
+              exit 1
+            fi
+          fi
+
+          ssh -p "$SSH_PORT" -i ~/.ssh/id_rsa $SSH_OPTS $EC2_USER@$EC2_HOST "echo Connected to \$(hostname)"
+
+          docker save brb-schedule:latest > brb-schedule.tar
+          scp -P "$SSH_PORT" -i ~/.ssh/id_rsa $SSH_OPTS brb-schedule.tar $EC2_USER@$EC2_HOST:/tmp/
+
+          ssh -p "$SSH_PORT" -i ~/.ssh/id_rsa $SSH_OPTS $EC2_USER@$EC2_HOST << 'EOF'
+          set -euo pipefail
+          docker load < /tmp/brb-schedule.tar
+          docker stop brb-schedule || true
+          docker rm   brb-schedule || true
+          docker run -d \
+            --name brb-schedule \
+            --restart unless-stopped \
+            -p 127.0.0.1:3005:80 \
+            brb-schedule:latest
+          docker ps --filter name=brb-schedule --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+          docker inspect -f '{{.State.Running}}' brb-schedule | grep true
+          rm /tmp/brb-schedule.tar
+          EOF
