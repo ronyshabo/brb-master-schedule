@@ -10,6 +10,11 @@ on:
       - main
   workflow_dispatch:
 
+# A second push waits for the running deploy instead of racing it.
+concurrency:
+  group: deploy-brb-master-schedule
+  cancel-in-progress: false
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -112,6 +117,9 @@ jobs:
 
           ssh -p "$SSH_PORT" -i ~/.ssh/id_rsa $SSH_OPTS $EC2_USER@$EC2_HOST << 'EOF'
           set -euo pipefail
+          # One deploy at a time on this server: every BRB app takes this lock.
+          exec 9>/tmp/brb-deploy.lock
+          flock -w 1800 9 || { echo "Gave up after 30 minutes waiting for another deploy."; exit 1; }
           docker load < /tmp/brb-schedule.tar
           docker stop brb-schedule || true
           docker rm   brb-schedule || true
