@@ -9,7 +9,7 @@ import WeeklyAvailability from '../schedule/WeeklyAvailability'
 import { Legend } from '../schedule/AdminScheduleTab'
 import { useScheduleData } from '../schedule/useScheduleData'
 import { assignShift, dropShift, moveShift, setMyColor } from '../schedule/store'
-import { BARISTA_COLORS, SHIFTS, dateKey, formatDay, formatRange, pickerLists } from '../schedule/shifts.js'
+import { BARISTA_COLORS, SHIFTS, dateKey, fillMine, formatDay, formatRange, pickerLists } from '../schedule/shifts.js'
 import '../schedule/schedule.css'
 import './barista.css'
 
@@ -28,6 +28,97 @@ function PageFrame({ barRight, marquee, children }) {
       <div className="barista-marquee">{marquee}</div>
       <main className="barista-body">{children}</main>
     </div>
+  )
+}
+
+const addDays = (key, days) => {
+  const [year, month, day] = key.split('-').map(Number)
+  return dateKey(new Date(year, month - 1, day + days))
+}
+
+// Sign yourself up for empty shifts you can do, from today to a date you pick,
+// up to a number of shifts a week. Shows the shifts first; nothing is saved
+// until "Add me".
+function FillMySchedulePanel({ me, data }) {
+  const todayKey = dateKey(new Date())
+  const [endKey, setEndKey] = useState(() => addDays(todayKey, 13))
+  const [maxPerWeek, setMaxPerWeek] = useState(4)
+  const [saving, setSaving] = useState(null) // { done, total } while adding
+
+  const limit = Math.max(1, Math.min(14, Number(maxPerWeek) || 1))
+  const plan = useMemo(
+    () => (endKey >= todayKey
+      ? fillMine({ baristaId: me.id, startKey: todayKey, endKey, assignmentsByDate: data.assignmentsByDate, availabilityOf: data.availabilityOf, maxPerWeek: limit })
+      : null),
+    [me.id, todayKey, endKey, data.assignmentsByDate, data.availabilityOf, limit]
+  )
+
+  const addMe = async () => {
+    const { picks } = plan
+    if (!window.confirm(`Add you to ${picks.length} shift${picks.length === 1 ? '' : 's'} through ${formatDay(endKey)}?`)) return
+    let added = 0
+    setSaving({ done: 0, total: picks.length })
+    for (const [index, pick] of picks.entries()) {
+      // One at a time: a shift someone else just took fails on its own and the rest go on.
+      if (await assignShift(pick.date, pick.shift, me, me.name)) added += 1
+      setSaving({ done: index + 1, total: picks.length })
+    }
+    setSaving(null)
+    alert(added === picks.length ? `You're on ${added} more shift${added === 1 ? '' : 's'}.` : `Added ${added} of ${picks.length} - someone took the others first.`)
+  }
+
+  return (
+    <section className="sched-panel">
+      <h3>fill-my-schedule.exe</h3>
+      <p className="sched-muted">
+        Pick how far ahead and how many shifts a week you want. You'll be added to empty shifts you said you can do,
+        earliest first, never two in one day. Shifts other people have aren't touched.
+      </p>
+
+      <div className="sched-range">
+        <span className="sched-range-custom">
+          Today to
+          <input type="date" min={todayKey} value={endKey} onChange={(event) => setEndKey(event.target.value)} />
+        </span>
+        <button type="button" className="sched-link-btn" onClick={() => setEndKey(addDays(todayKey, 6))}>1 week</button>
+        <button type="button" className="sched-link-btn" onClick={() => setEndKey(addDays(todayKey, 13))}>2 weeks</button>
+        <button type="button" className="sched-link-btn" onClick={() => setEndKey(addDays(todayKey, 27))}>4 weeks</button>
+      </div>
+      <label className="sched-range-custom">
+        At most
+        <input type="number" min="1" max="14" value={maxPerWeek} onChange={(event) => setMaxPerWeek(event.target.value)} style={{ width: '4em' }} />
+        shifts a week (counting ones you already have)
+      </label>
+
+      {!plan ? (
+        <p className="sched-warning">Pick a date from today on.</p>
+      ) : plan.picks.length === 0 ? (
+        <p className="sched-muted">
+          {plan.heldBack > 0
+            ? `You're already at ${limit} a week - raise the limit to take more.`
+            : `No empty shifts you can do through ${formatDay(endKey)}.`}
+        </p>
+      ) : (
+        <>
+          <p>
+            You'd be added to <strong>{plan.picks.length}</strong> shift{plan.picks.length === 1 ? '' : 's'}
+            {plan.heldBack > 0 && <span className="sched-muted"> ({plan.heldBack} more day{plan.heldBack === 1 ? '' : 's'} you could work {plan.heldBack === 1 ? 'is' : 'are'} over your weekly limit)</span>}:
+          </p>
+          <ul className="barista-upcoming">
+            {plan.picks.map((pick) => (
+              <li key={`${pick.date}_${pick.shift}`} className={`sched-bubble-${pick.shift}`}>
+                <strong>{formatDay(pick.date)}</strong> · {SHIFTS[pick.shift].label} <small>{formatRange(data.timesFor(pick.date, pick.shift))}</small>
+              </li>
+            ))}
+          </ul>
+          <div className="sched-actions">
+            <button type="button" className="sched-btn sched-btn-primary" onClick={addMe} disabled={Boolean(saving)}>
+              {saving ? `Adding… ${saving.done} / ${saving.total}` : `Add me to these ${plan.picks.length}`}
+            </button>
+          </div>
+        </>
+      )}
+    </section>
   )
 }
 
@@ -220,6 +311,7 @@ function SchedulePortal({ user }) {
             </>
           ) : (
             <>
+              <FillMySchedulePanel me={me} data={data} />
               <section className="sched-panel">
                 <h3>my-usual-week.txt</h3>
                 <WeeklyAvailability barista={me} weekly={data.weekly} assignments={data.assignments} />

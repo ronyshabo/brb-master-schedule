@@ -4,7 +4,7 @@
 // shift, the month grid, who the picker offers, open shifts, and the email.
 
 import {
-  autoFill, baristaColors, BARISTA_COLORS, DAY_ORDER, shiftsOnDay, coverageGaps, formatRange, formatTime, resolveHours, timesFor, conflicts, freeFor, groupAssignments, isWholeDayOff, makeAvailability, monthGrid, openShifts, pickerLists, shiftsForDate,
+  baristaColors, fillMine, weekStartOf, BARISTA_COLORS, DAY_ORDER, shiftsOnDay, coverageGaps, formatRange, formatTime, resolveHours, timesFor, conflicts, freeFor, groupAssignments, isWholeDayOff, makeAvailability, monthGrid, openShifts, pickerLists, shiftsForDate,
 } from './shifts.js'
 import { buildBroadcast, buildCoverRequest, gmailComposeUrl } from './broadcast.js'
 import { matchBaristaForSignup, normalizeName, validateSignupForm } from '../barista/signup.js'
@@ -199,47 +199,33 @@ console.log('barista colours')
   eq('twelve colours, unique ids', new Set(BARISTA_COLORS.map((color) => color.id)).size, 12)
 }
 
-console.log('auto-fill')
+console.log('fill my schedule')
 {
-  // Mon 2 - Sun 8 Nov 2026: 2+2+2+2 + 3+3+3 = 17 shifts.
-  const team = [
-    { id: 'ana', name: 'Ana' },
-    { id: 'ben', name: 'Ben' },
-    { id: 'cy', name: 'Cy', active: false },
-    { id: 'dee', name: 'Dee' },
-  ]
+  // Mon 2 - Sun 15 Nov 2026: two Mon-Sun weeks.
   const existing = groupAssignments([
-    { id: '2026-11-02_opening', date: '2026-11-02', shift: 'opening', baristaId: 'ben', baristaName: 'Ben' },
-    // outside the range: must not count
-    { id: '2026-10-30_opening', date: '2026-10-30', shift: 'opening', baristaId: 'ana', baristaName: 'Ana' },
+    { date: '2026-11-02', shift: 'opening', baristaId: 'ben', baristaName: 'Ben' }, // Ben's
+    { date: '2026-11-03', shift: 'closing', baristaId: 'ana', baristaName: 'Ana' }, // already Ana's
+    { date: '2026-10-30', shift: 'opening', baristaId: 'ana', baristaName: 'Ana' }, // last week: doesn't count
   ])
   const availability = makeAvailability(
-    [{ baristaId: 'dee', date: '2026-11-04', allDay: true }],
+    [{ baristaId: 'ana', date: '2026-11-05', allDay: true }],
     [{ baristaId: 'ana', cant: { sat: ['opening', 'closing', 'shared'], sun: ['opening', 'closing', 'shared'] } }]
   )
-  const plan = autoFill({ baristas: team, startKey: '2026-11-02', endKey: '2026-11-08', assignmentsByDate: existing, availabilityOf: availability })
-  const at = (date, shift) => plan.proposals.find((entry) => entry.date === date && entry.shift === shift)?.baristaName ?? null
+  const run = (maxPerWeek, endKey = '2026-11-15') =>
+    fillMine({ baristaId: 'ana', startKey: '2026-11-02', endKey, assignmentsByDate: existing, availabilityOf: availability, maxPerWeek })
+  const label = (plan) => plan.picks.map((pick) => `${pick.date.slice(8)} ${pick.shift}`)
 
-  eq('leaves a taken shift alone', at('2026-11-02', 'opening'), null)
-  eq('16 empty shifts, all accounted for', plan.proposals.length + plan.unfilled.length, 16)
-  eq('never picks an inactive barista', plan.proposals.some((entry) => entry.baristaId === 'cy'), false)
-  eq('respects a day off', at('2026-11-04', 'opening') !== 'Dee' && at('2026-11-04', 'closing') !== 'Dee', true)
-  eq('respects the usual week', plan.proposals.some((entry) => entry.baristaId === 'ana' && entry.date >= '2026-11-07'), false)
-  const doubles = plan.proposals.filter((entry, index, all) =>
-    all.some((other, otherIndex) => otherIndex < index && other.date === entry.date && other.baristaId === entry.baristaId))
-  eq('nobody twice on one day', doubles.length, 0)
-  eq('Wed: Dee off, so Ana and Ben', [at('2026-11-04', 'opening'), at('2026-11-04', 'closing')].sort(), ['Ana', 'Ben'])
-  eq('Sat and Sun shared: only Ben and Dee free, both already on', plan.unfilled, [
-    { date: '2026-11-07', shift: 'shared' },
-    { date: '2026-11-08', shift: 'shared' },
-  ])
-  eq('existing shifts in range count toward balance', at('2026-11-02', 'closing'), 'Ana')
-  eq('counts per barista (Ana is off weekends)', plan.counts, { ben: 6, ana: 4, dee: 5 })
-  eq('nothing to do when all is filled', autoFill({ baristas: team, startKey: '2026-11-02', endKey: '2026-11-02',
-    assignmentsByDate: groupAssignments([
-      { date: '2026-11-02', shift: 'opening', baristaId: 'ben', baristaName: 'Ben' },
-      { date: '2026-11-02', shift: 'closing', baristaId: 'ana', baristaName: 'Ana' },
-    ]), availabilityOf: availability }).proposals, [])
+  const loose = run(14, '2026-11-08')
+  eq('one empty shift a day she can do, earliest first, skipping her day off and weekend',
+    label(loose), ['02 closing', '04 opening', '06 opening'])
+  eq("Tue: she's already on closing, so not opening too", loose.picks.some((pick) => pick.date === '2026-11-03'), false)
+  eq("never Ben's shift", loose.picks.some((pick) => pick.date === '2026-11-02' && pick.shift === 'opening'), false)
+
+  const capped = run(2)
+  eq('weekly limit counts the shift she already has', label(capped), ['02 closing', '09 opening', '10 opening'])
+  eq('days held back by the limit (Wed 4, Fri 6, Wed 11 - Fri 13)', capped.heldBack, 5)
+  eq('week starts Monday', [weekStartOf('2026-11-08'), weekStartOf('2026-11-09'), weekStartOf('2026-11-02')], ['2026-11-02', '2026-11-09', '2026-11-02'])
+  eq('nothing to do at the limit', run(1, '2026-11-08').picks, [])
 }
 
 console.log(`\n${pass} passed, ${fail} failed`)
