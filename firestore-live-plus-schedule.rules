@@ -147,16 +147,6 @@ service cloud.firestore {
     match /{document=**} {
       allow read, write: if false;
     }
-    
-    match /baristas/{id} {
-      allow read: if true;
-      allow write: if isAdmin();
-      allow update: if isSignedIn()
-        && !('uid' in resource.data)
-        && request.resource.data.uid == request.auth.uid
-        && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['uid', 'email', 'linkedAt']);
-    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // BEGIN brb-acl — acl.brbcoffee-atx.com

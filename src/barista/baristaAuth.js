@@ -75,15 +75,24 @@ export const linkAccount = async (name) => {
   return barista
 }
 
+// The account is created before the name is matched: the barista list is
+// only readable signed in, so it can't be checked from the logged-out form.
 export const signUp = async ({ name, email, password }) => {
-  const barista = await findBarista(name)
-
   const address = email.trim()
   let credential
   try {
     credential = await createUserWithEmailAndPassword(auth, address, password)
   } catch (err) {
     throw friendly(err)
+  }
+
+  let barista
+  try {
+    barista = await findBarista(name)
+  } catch (err) {
+    // No barista by that name (or already linked): don't leave the account behind.
+    await deleteUser(credential.user).catch(() => {})
+    throw err
   }
 
   try {

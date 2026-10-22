@@ -41,7 +41,8 @@ const shift = (who, name, date, s) => ({ date, shift: s, baristaId: who, barista
 const dayOff = (who, name, date, extra = {}) => ({ baristaId: who, baristaName: name, date, allDay: true, cant: [], createdAt: serverTimestamp(), ...extra })
 
 // ---- sign-up (baristaAuth.js) ----
-await test('anyone can read the barista list (sign-up name check)', () => assertSucceeds(getDocs(collection(anon, 'baristas'))))
+await test('logged out cannot read the barista list (base pay, emails)', () => assertFails(getDocs(collection(anon, 'baristas'))))
+await test('a new account can read it to match its name', () => assertSucceeds(getDocs(collection(newbie, 'baristas'))))
 await test('new account links an unlinked barista', () =>
   assertSucceeds(updateDoc(doc(newbie, 'baristas/new'), { uid: 'uid-new', email: 'new@example.com', linkedAt: serverTimestamp() })))
 await test('...and creates its scheduleUsers gate', () =>
