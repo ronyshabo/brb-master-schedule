@@ -145,21 +145,21 @@ const roster = [
   { id: 'b', name: 'Ben Carter', uid: 'u1' },
   { id: 'j', name: 'José Peña' },
   { id: 'old', name: 'Old Timer', active: false },
-  { id: 'd1', name: 'Sam Lee' }, { id: 'd2', name: 'Sam Lee' },
+  { id: 's1', name: 'Sam Lee' }, { id: 's2', name: 'Sam Ortiz' },
 ]
 eq('exact name', matchBaristaForSignup(roster, 'Ana Morales').barista?.id, 'a')
-eq('case and spaces ignored', matchBaristaForSignup(roster, '  ana   MORALES ').barista?.id, 'a')
-eq('accents ignored', matchBaristaForSignup(roster, 'Jose Pena').barista?.id, 'j')
-eq('first name alone is not enough', Boolean(matchBaristaForSignup(roster, 'Ana').error), true)
-eq('unknown name refused', matchBaristaForSignup(roster, 'Zed Nobody').error.startsWith("We couldn't find"), true)
-eq('already has an account', matchBaristaForSignup(roster, 'Ben Carter').error.startsWith('There is already an account'), true)
-eq('inactive barista refused', Boolean(matchBaristaForSignup(roster, 'Old Timer').error), true)
-eq('two people, same name', matchBaristaForSignup(roster, 'Sam Lee').error.startsWith('More than one'), true)
-eq('full name matches a first-name-only entry', matchBaristaForSignup([{ id: 'r', name: 'Rony' }], 'Rony Shabo').barista?.id, 'r')
+eq('first name alone', matchBaristaForSignup(roster, 'Ana').barista?.id, 'a')
+eq('case and spaces ignored', matchBaristaForSignup(roster, '  ana   ').barista?.id, 'a')
+eq('accents ignored', matchBaristaForSignup(roster, 'Jose').barista?.id, 'j')
+eq('only the first name is compared', matchBaristaForSignup(roster, 'Ana Smith').barista?.id, 'a')
+eq('unknown name refused', matchBaristaForSignup(roster, 'Zed').error.startsWith("We couldn't find"), true)
+eq('already has an account', matchBaristaForSignup(roster, 'Ben').error.startsWith('There is already an account'), true)
+eq('inactive barista refused', Boolean(matchBaristaForSignup(roster, 'Old').error), true)
+eq('shared first name asks for the full name', matchBaristaForSignup(roster, 'Sam').error.startsWith('More than one barista has that first name'), true)
+eq('full name picks between shared first names', matchBaristaForSignup(roster, 'Sam Ortiz').barista?.id, 's2')
+eq('two people, same full name', matchBaristaForSignup([...roster, { id: 's3', name: 'Sam Lee' }], 'Sam Lee').error.startsWith('More than one barista has that name'), true)
+eq('linked namesake is skipped', matchBaristaForSignup([{ id: 'r1', name: 'Rony', uid: 'x' }, { id: 'r2', name: 'Rony Shabo' }], 'Rony').barista?.id, 'r2')
 eq('first-name-only entry, accents/case', matchBaristaForSignup([{ id: 'r', name: 'jose' }], 'José Peña').barista?.id, 'r')
-eq('two first-name-only entries refused', matchBaristaForSignup([{ id: 'r1', name: 'Rony' }, { id: 'r2', name: 'rony' }], 'Rony Shabo').error.startsWith('More than one'), true)
-eq('exact full name wins over a first-name entry', matchBaristaForSignup([{ id: 'r', name: 'Rony' }, { id: 'rs', name: 'Rony Shabo' }], 'Rony Shabo').barista?.id, 'rs')
-eq('first-name entry already linked', matchBaristaForSignup([{ id: 'r', name: 'Rony', uid: 'x' }], 'Rony Shabo').error.startsWith('There is already'), true)
 eq('normalize', normalizeName("  D'Angelo  Ruíz "), "d'angelo ruiz")
 eq('form ok', validateSignupForm({ email: 'a@b.co', password: 'secret1', confirm: 'secret1' }), null)
 eq('bad email', validateSignupForm({ email: 'nope', password: 'secret1', confirm: 'secret1' }), 'Enter a valid email address.')

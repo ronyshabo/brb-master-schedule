@@ -98,11 +98,11 @@ export default function AuthPage() {
       {mode === 'signup' && (
         <form className="auth-form" onSubmit={onSignup}>
           <p className="auth-lead">
-            Your name has to be on the BRB barista list. Type it the way the manager entered it — first and last name.
+            Your name has to be on the BRB barista list. Your first name is enough.
           </p>
           <label className="sched-field">
-            Your name
-            <input autoComplete="name" required placeholder="First Last" {...field('name')} />
+            Your first name
+            <input autoComplete="given-name" required placeholder="First name" {...field('name')} />
           </label>
           <label className="sched-field">
             Email

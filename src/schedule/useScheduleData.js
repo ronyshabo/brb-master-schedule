@@ -39,6 +39,7 @@ export const useScheduleData = () => {
 
   return {
     loading: !baristas || !assignments || !unavailability || !weekly || !settings || !shiftTimes,
+    baristasLoaded: Boolean(baristas),
     error,
     clearError: () => setError(null),
     baristas: baristas || [],

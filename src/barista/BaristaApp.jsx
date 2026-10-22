@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import AuthPage from './AuthPage'
-import { signOut, watchAuth } from './baristaAuth.js'
+import { linkAccount, signOut, watchAuth } from './baristaAuth.js'
 import MonthNav from '../schedule/MonthNav'
 import ScheduleCalendar from '../schedule/ScheduleCalendar'
 import ShiftPicker from '../schedule/ShiftPicker'
@@ -50,6 +50,49 @@ export default function BaristaApp() {
   return <SchedulePortal user={user} />
 }
 
+// Logged in, but the account belongs to no barista yet (it was made in another
+// BRB app, say): link it by first name, like sign-up does.
+function LinkAccountPanel({ email }) {
+  const [name, setName] = useState('')
+  const [error, setError] = useState(null)
+  const [busy, setBusy] = useState(false)
+
+  const onSubmit = async (event) => {
+    event.preventDefault()
+    setBusy(true)
+    setError(null)
+    try {
+      await linkAccount(name)
+      // The schedule listeners were refused before the link existed; start over.
+      window.location.reload()
+    } catch (err) {
+      setError(err?.message || 'Something went wrong. Please try again.')
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="sched-panel auth-window">
+      <h3>account.txt</h3>
+      <form className="auth-form" onSubmit={onSubmit}>
+        <p className="auth-lead">
+          You're logged in as <strong>{email}</strong>, but this account isn't linked to anyone on the barista list
+          yet. Type your first name to link it.
+        </p>
+        <label className="sched-field">
+          Your first name
+          <input autoComplete="given-name" required placeholder="First name" value={name} onChange={(event) => setName(event.target.value)} />
+        </label>
+        {error && <p className="sched-error">{error}</p>}
+        <button type="submit" className="sched-btn sched-btn-primary sched-btn-block" disabled={busy}>
+          {busy ? 'Linking…' : 'Link my account'}
+        </button>
+        <button type="button" className="sched-btn sched-btn-block" onClick={signOut}>Log out</button>
+      </form>
+    </section>
+  )
+}
+
 function SchedulePortal({ user }) {
   const data = useScheduleData()
   const [tab, setTab] = useState('schedule')
@@ -84,6 +127,11 @@ function SchedulePortal({ user }) {
     [data.assignments, meId, todayKey]
   )
 
+  // Until the account is linked the rules refuse the schedule itself, so don't
+  // wait for it - the barista list is enough to know.
+  if (data.baristasLoaded && !me) {
+    return <PageFrame barRight={barRight} marquee="Welcome to the BRB barista schedule"><LinkAccountPanel email={user.email} /></PageFrame>
+  }
   if (data.loading) {
     return <PageFrame barRight={barRight} marquee="Loading the schedule…"><p className="sched-muted">Loading schedule…</p></PageFrame>
   }
@@ -100,14 +148,7 @@ function SchedulePortal({ user }) {
       )}
 
       {!me ? (
-        <section className="sched-panel">
-          <h3>account.txt</h3>
-          <p>
-            You're logged in as <strong>{user.email}</strong>, but this account isn't linked to anyone on the barista
-            list. Ask a manager to check your name in Staff Management.
-          </p>
-          <button type="button" className="sched-btn" onClick={signOut}>Log out</button>
-        </section>
+        <LinkAccountPanel email={user.email} />
       ) : (
         <>
           <nav className="barista-tabs" role="tablist">

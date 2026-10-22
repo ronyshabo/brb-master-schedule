@@ -40,11 +40,43 @@ export const resetPassword = async (email) => {
   }
 }
 
-export const signUp = async ({ name, email, password }) => {
+const findBarista = async (name, { takenError } = {}) => {
   const snapshot = await getDocs(collection(db, 'baristas'))
   const baristas = snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() }))
-  const { barista, error } = matchBaristaForSignup(baristas, name)
-  if (error) throw new Error(error)
+  const { barista, error, taken } = matchBaristaForSignup(baristas, name)
+  if (error) throw new Error(taken && takenError ? takenError : error)
+  return barista
+}
+
+const link = async (barista, uid, email) => {
+  await updateDoc(doc(db, 'baristas', barista.id), { uid, email, linkedAt: serverTimestamp() })
+  await setDoc(doc(db, 'scheduleUsers', uid), {
+    uid,
+    baristaId: barista.id,
+    baristaName: barista.name,
+    email,
+    createdAt: serverTimestamp(),
+  })
+}
+
+// For someone already logged in whose account belongs to no barista (made in
+// another BRB app, or in the Firebase console): link it by name.
+export const linkAccount = async (name) => {
+  const barista = await findBarista(name, {
+    takenError:
+      'That name is already linked to a different login. Log out and log in with that one, or ask the manager to unlink it.',
+  })
+  try {
+    await link(barista, auth.currentUser.uid, auth.currentUser.email)
+  } catch (err) {
+    console.error('Linking the account failed', err)
+    throw new Error('Could not link your account to your name. Please try again, or ask the manager.')
+  }
+  return barista
+}
+
+export const signUp = async ({ name, email, password }) => {
+  const barista = await findBarista(name)
 
   const address = email.trim()
   let credential
@@ -54,16 +86,8 @@ export const signUp = async ({ name, email, password }) => {
     throw friendly(err)
   }
 
-  const { uid } = credential.user
   try {
-    await updateDoc(doc(db, 'baristas', barista.id), { uid, email: address, linkedAt: serverTimestamp() })
-    await setDoc(doc(db, 'scheduleUsers', uid), {
-      uid,
-      baristaId: barista.id,
-      baristaName: barista.name,
-      email: address,
-      createdAt: serverTimestamp(),
-    })
+    await link(barista, credential.user.uid, address)
   } catch (err) {
     // Someone linked this barista first (or the write was refused): don't leave
     // an account behind that belongs to nobody.

@@ -35,7 +35,7 @@ this app's block (`firestore-schedule.rules`) added at the end. Publish it in th
 
 The schedule is behind a login. **Create an account** asks for the barista's name, email and password:
 - the name must match a barista the manager added in Staff Management (case, spacing and accents don't
-  matter; first name alone isn't enough), who is active and has no account yet;
+  matter; the first name alone is enough, and the full name picks between two baristas with the same first name), who is active and has no account yet;
 - the account is then linked to that barista: `baristas/{id}` gets `uid`, `email`, `linkedAt`, and
   `scheduleUsers/{uid}` is created (the same linking brb-schedule used, which the live rules already allow
   only once per barista).
