@@ -8,8 +8,8 @@ import AvailabilityCalendar from '../schedule/AvailabilityCalendar'
 import WeeklyAvailability from '../schedule/WeeklyAvailability'
 import { Legend } from '../schedule/AdminScheduleTab'
 import { useScheduleData } from '../schedule/useScheduleData'
-import { assignShift, dropShift, moveShift } from '../schedule/store'
-import { SHIFTS, dateKey, formatDay, formatRange, pickerLists } from '../schedule/shifts.js'
+import { assignShift, dropShift, moveShift, setMyColor } from '../schedule/store'
+import { BARISTA_COLORS, SHIFTS, dateKey, formatDay, formatRange, pickerLists } from '../schedule/shifts.js'
 import '../schedule/schedule.css'
 import './barista.css'
 
@@ -28,6 +28,34 @@ function PageFrame({ barRight, marquee, children }) {
       <div className="barista-marquee">{marquee}</div>
       <main className="barista-body">{children}</main>
     </div>
+  )
+}
+
+// The colour your name shows in on the calendar, for everyone.
+function ColorPanel({ uid, current }) {
+  const currentId = BARISTA_COLORS.find((color) => color.hex === current)?.id || null
+  return (
+    <section className="sched-panel">
+      <h3>my-color.cfg</h3>
+      <p className="sched-muted">Pick a colour for your name on the schedule, so your shifts are easy to spot. Everyone sees it.</p>
+      <div className="sched-color-choices" role="group" aria-label="Name colour">
+        {BARISTA_COLORS.map((color) => (
+          <button
+            key={color.id}
+            type="button"
+            className="sched-color-swatch"
+            style={{ '--who': color.hex }}
+            aria-pressed={currentId === color.id}
+            onClick={() => setMyColor(uid, color.id)}
+          >
+            {color.label}
+          </button>
+        ))}
+        <button type="button" className="sched-color-swatch is-none" aria-pressed={!currentId} onClick={() => setMyColor(uid, null)}>
+          None
+        </button>
+      </div>
+    </section>
   )
 }
 
@@ -171,6 +199,7 @@ function SchedulePortal({ user }) {
                 myId={me.id}
                 offDates={myOffDates}
                 timesFor={data.timesFor}
+                colors={data.colors}
                 lockPast
               />
               <section className="sched-panel">
@@ -187,6 +216,7 @@ function SchedulePortal({ user }) {
                   </ul>
                 )}
               </section>
+              <ColorPanel uid={user.uid} current={data.colors[me.id]} />
             </>
           ) : (
             <>

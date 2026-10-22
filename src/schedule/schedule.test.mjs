@@ -4,7 +4,7 @@
 // shift, the month grid, who the picker offers, open shifts, and the email.
 
 import {
-  coverageGaps, formatRange, formatTime, resolveHours, timesFor, conflicts, freeFor, groupAssignments, isWholeDayOff, makeAvailability, monthGrid, openShifts, pickerLists, shiftsForDate,
+  autoFill, baristaColors, BARISTA_COLORS, DAY_ORDER, shiftsOnDay, coverageGaps, formatRange, formatTime, resolveHours, timesFor, conflicts, freeFor, groupAssignments, isWholeDayOff, makeAvailability, monthGrid, openShifts, pickerLists, shiftsForDate,
 } from './shifts.js'
 import { buildBroadcast, buildCoverRequest, gmailComposeUrl } from './broadcast.js'
 import { matchBaristaForSignup, normalizeName, validateSignupForm } from '../barista/signup.js'
@@ -165,6 +165,82 @@ eq('form ok', validateSignupForm({ email: 'a@b.co', password: 'secret1', confirm
 eq('bad email', validateSignupForm({ email: 'nope', password: 'secret1', confirm: 'secret1' }), 'Enter a valid email address.')
 eq('short password', validateSignupForm({ email: 'a@b.co', password: '123', confirm: '123' }), 'Password must be at least 6 characters.')
 eq('mismatch', validateSignupForm({ email: 'a@b.co', password: 'secret1', confirm: 'secret2' }), "The passwords don't match.")
+
+console.log('middle shift')
+{
+  const day = groupAssignments([
+    { date: '2026-11-03', shift: 'opening', baristaId: 'ana', baristaName: 'Ana' },
+    { date: '2026-11-03', shift: 'middle', baristaId: 'ben', baristaName: 'Ben' },
+  ])['2026-11-03']
+  eq('not a regular shift', shiftsForDate('2026-11-03').includes('middle'), false)
+  eq('shown only when someone is on it', shiftsOnDay('2026-11-03', {}), ['opening', 'closing'])
+  eq('sits between opening and closing', shiftsOnDay('2026-11-03', day), ['opening', 'middle', 'closing'])
+  eq('Fri order', shiftsOnDay('2026-11-06', { middle: [{}] }), ['opening', 'middle', 'shared', 'closing'])
+  eq('day order', DAY_ORDER, ['opening', 'middle', 'shared', 'closing'])
+  eq('defaults to 12pm - 2pm', timesFor('2026-11-03', 'middle'), { start: '12:00', end: '14:00', custom: false })
+  eq('old saved hours without middle still get it', resolveHours({ weekday: { opening: { start: '07:00', end: '12:00' } } }).weekday.middle, { start: '12:00', end: '14:00' })
+  // Opener leaves at noon; Ben covers 12-2.
+  const cut = { '2026-11-03_opening': { start: '08:00', end: '12:00' } }
+  const times = (date, shift) => timesFor(date, shift, undefined, cut)
+  eq('opener leaving at noon leaves a gap', coverageGaps('2026-11-03', times), [{ start: '12:00', end: '14:00' }])
+  eq('...that the middle shift covers', coverageGaps('2026-11-03', times, shiftsOnDay('2026-11-03', day)), [])
+  eq('never counted as open', openShifts({ startKey: '2026-11-03', endKey: '2026-11-03', assignmentsByDate: {} }).map((entry) => entry.shift), ['opening', 'closing'])
+}
+
+console.log('barista colours')
+{
+  const team = [{ id: 'ana', name: 'Ana', uid: 'u-ana' }, { id: 'ben', name: 'Ben', uid: 'u-ben2' }, { id: 'cy', name: 'Cy' }]
+  const users = [
+    { id: 'u-ana', uid: 'u-ana', baristaId: 'ana', color: 'teal' },
+    { id: 'u-ben1', uid: 'u-ben1', baristaId: 'ben', color: 'red' }, // Ben's old login
+    { id: 'u-ben2', uid: 'u-ben2', baristaId: 'ben', color: 'not-a-colour' },
+  ]
+  eq('picked colour by barista id; old logins and unknown ids ignored', baristaColors(users, team), { ana: '#00796b' })
+  eq('twelve colours, unique ids', new Set(BARISTA_COLORS.map((color) => color.id)).size, 12)
+}
+
+console.log('auto-fill')
+{
+  // Mon 2 - Sun 8 Nov 2026: 2+2+2+2 + 3+3+3 = 17 shifts.
+  const team = [
+    { id: 'ana', name: 'Ana' },
+    { id: 'ben', name: 'Ben' },
+    { id: 'cy', name: 'Cy', active: false },
+    { id: 'dee', name: 'Dee' },
+  ]
+  const existing = groupAssignments([
+    { id: '2026-11-02_opening', date: '2026-11-02', shift: 'opening', baristaId: 'ben', baristaName: 'Ben' },
+    // outside the range: must not count
+    { id: '2026-10-30_opening', date: '2026-10-30', shift: 'opening', baristaId: 'ana', baristaName: 'Ana' },
+  ])
+  const availability = makeAvailability(
+    [{ baristaId: 'dee', date: '2026-11-04', allDay: true }],
+    [{ baristaId: 'ana', cant: { sat: ['opening', 'closing', 'shared'], sun: ['opening', 'closing', 'shared'] } }]
+  )
+  const plan = autoFill({ baristas: team, startKey: '2026-11-02', endKey: '2026-11-08', assignmentsByDate: existing, availabilityOf: availability })
+  const at = (date, shift) => plan.proposals.find((entry) => entry.date === date && entry.shift === shift)?.baristaName ?? null
+
+  eq('leaves a taken shift alone', at('2026-11-02', 'opening'), null)
+  eq('16 empty shifts, all accounted for', plan.proposals.length + plan.unfilled.length, 16)
+  eq('never picks an inactive barista', plan.proposals.some((entry) => entry.baristaId === 'cy'), false)
+  eq('respects a day off', at('2026-11-04', 'opening') !== 'Dee' && at('2026-11-04', 'closing') !== 'Dee', true)
+  eq('respects the usual week', plan.proposals.some((entry) => entry.baristaId === 'ana' && entry.date >= '2026-11-07'), false)
+  const doubles = plan.proposals.filter((entry, index, all) =>
+    all.some((other, otherIndex) => otherIndex < index && other.date === entry.date && other.baristaId === entry.baristaId))
+  eq('nobody twice on one day', doubles.length, 0)
+  eq('Wed: Dee off, so Ana and Ben', [at('2026-11-04', 'opening'), at('2026-11-04', 'closing')].sort(), ['Ana', 'Ben'])
+  eq('Sat and Sun shared: only Ben and Dee free, both already on', plan.unfilled, [
+    { date: '2026-11-07', shift: 'shared' },
+    { date: '2026-11-08', shift: 'shared' },
+  ])
+  eq('existing shifts in range count toward balance', at('2026-11-02', 'closing'), 'Ana')
+  eq('counts per barista (Ana is off weekends)', plan.counts, { ben: 6, ana: 4, dee: 5 })
+  eq('nothing to do when all is filled', autoFill({ baristas: team, startKey: '2026-11-02', endKey: '2026-11-02',
+    assignmentsByDate: groupAssignments([
+      { date: '2026-11-02', shift: 'opening', baristaId: 'ben', baristaName: 'Ben' },
+      { date: '2026-11-02', shift: 'closing', baristaId: 'ana', baristaName: 'Ana' },
+    ]), availabilityOf: availability }).proposals, [])
+}
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)

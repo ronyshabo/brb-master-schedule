@@ -73,6 +73,10 @@ await test('admin assigns and removes anyone', async () => {
   await assertSucceeds(setDoc(doc(admin, 'scheduleShifts/2026-11-06_shared'), shift('ben', 'Ben Carter', '2026-11-06', 'shared')))
   await assertSucceeds(deleteDoc(doc(admin, 'scheduleShifts/2026-11-02_opening')))
 })
+await test('a middle (cover) shift is a valid shift', () =>
+  assertSucceeds(setDoc(doc(ana, 'scheduleShifts/2026-11-03_middle'), shift('ana', 'Ana Morales', '2026-11-03', 'middle'))))
+await test('...but a made-up shift name is not', () =>
+  assertFails(setDoc(doc(ana, 'scheduleShifts/2026-11-03_brunch'), shift('ana', 'Ana Morales', '2026-11-03', 'brunch'))))
 
 // ---- availability ----
 await test('barista marks a day off', () => assertSucceeds(setDoc(doc(ana, 'scheduleUnavailability/ana_2026-11-09'), dayOff('ana', 'Ana Morales', '2026-11-09'))))

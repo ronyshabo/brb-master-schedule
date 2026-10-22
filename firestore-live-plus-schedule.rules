@@ -345,8 +345,9 @@ service cloud.firestore {
       return value is string && value.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
     }
 
+    // 'middle' is the optional cover shift between opening and closing.
     function schedIsShift(value) {
-      return value in ['opening', 'closing', 'shared'];
+      return value in ['opening', 'closing', 'shared', 'middle'];
     }
 
     function schedShiftList(value) {
