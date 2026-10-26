@@ -98,7 +98,7 @@ mark.current { background: var(--accent); color: #fff; }
 /* parts */
 .part { display: grid; gap: 1.25rem; padding-top: 3rem; scroll-margin-top: 6.5rem; }
 .part-head { display: grid; gap: 0.4rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--rule); }
-.block { display: grid; gap: 0.6rem; }
+.block { display: grid; gap: 0.6rem; scroll-margin-top: 6.5rem; }
 .note { padding: 0.75rem 1rem; border-radius: 8px; background: var(--accent-soft); }
 .note.warn { background: var(--warn-soft); }
 .note strong { color: var(--accent); }
@@ -193,7 +193,7 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; }
   .wrap { max-width: none; padding: 0; }
   .part, .sheet { break-before: page; padding-top: 0; }
   .sheet { border: 0; border-radius: 0; padding: 0; margin: 0; gap: 0.55rem; }
-  .sheet .check { padding-block: 0.12rem; }
+  .sheet .check { padding-block: 0.06rem; }
   .log { min-width: 0; font-size: 9.5pt; }
   .log thead th { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
   .steps { gap: 0.35in; }
@@ -239,7 +239,7 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; }
     <a href="#recipes"><strong>Part 1 · Recipes</strong><span>Quick reference card and full drink builds</span></a>
     <a href="#inventory"><strong>Part 2 · Inventory app</strong><span>How to count, flag Low/Out, and request items</span></a>
     <a href="#schedule"><strong>Part 3 · Schedule</strong><span>Coming soon</span></a>
-    <a href="#cleaning" class="key"><strong>Part 4 · Cleaning standards</strong><span>What we expect, who does what, and when</span></a>
+    <a href="#cleaning" class="key"><strong>Part 4 · Cleaning standards</strong><span>What we expect, hand washing, who does what, and when</span></a>
     <a href="#day-sheet"><strong>Sheet A · Day / shared shift</strong><span>Printable checklist</span></a>
     <a href="#closing-sheet"><strong>Sheet B · Closing shift</strong><span>Printable checklist</span></a>
     <a href="#bathroom-sheet"><strong>Sheet C · Bathroom</strong><span>Printable checklist and check log</span></a>
@@ -497,10 +497,43 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; }
       <li><div><strong>Leave it better than you found it.</strong> The next shift should be able to start making drinks the minute they walk in.</div></li>
       <li><div><strong>Finish your list before you clock out.</strong> Work through your shift's checklist, initial each line, and sign the bottom.</div></li>
       <li><div><strong>Can't finish something? Say so.</strong> Tell the next shift and your manager what's left and why. Write it on the sheet. Never skip a task quietly.</div></li>
-      <li><div><strong>Food safety comes first.</strong> Use sanitizer at the right strength, keep raw dairy cold, label and date what you open, and wash your hands after cleaning and before handling food or drinks.</div></li>
+      <li><div><strong>Wash your hands every time you step away from drinks.</strong> After the bathroom, after trash, and after any task that isn't making drinks, wash your hands before you touch cups, milk, or food. See <a href="#hand-washing">Hand washing &amp; food safety</a> below.</div></li>
       <li><div><strong>Customers can see the bar.</strong> Counters, the baklava display, and the condiment area should look ready at all times.</div></li>
       <li><div><strong>Report broken or worn gear.</strong> Use "We could use…" in the inventory app, and tell your manager if it affects drink quality or safety.</div></li>
     </ol>
+  </div>
+
+  <div class="block" id="hand-washing">
+    <h3>Hand washing &amp; food safety</h3>
+    <div class="note warn"><strong>The rule:</strong> if your hands touched anything that isn't part of making a drink, wash them before you go back to the bar.</div>
+    <div class="split">
+      <div class="duty-group"><h4>Always wash your hands after</h4>
+        <ul>
+          <li>Using the bathroom</li>
+          <li>Checking or cleaning the bathroom</li>
+          <li>Taking out trash or touching a trash can or lid</li>
+          <li>Sweeping, mopping, or using cleaning products</li>
+          <li>Unpacking deliveries and boxes</li>
+          <li>A break, eating or drinking, or using your phone</li>
+          <li>Touching your face or hair</li>
+        </ul>
+      </div>
+      <div class="duty-group"><h4>How to wash</h4>
+        <ol>
+          <li>Warm water and soap.</li>
+          <li>Scrub for 20 seconds: palms, backs, between your fingers, and under your nails.</li>
+          <li>Rinse and dry with a paper towel.</li>
+          <li>Turn off the faucet with the paper towel, then throw it away.</li>
+        </ol>
+      </div>
+    </div>
+    <div class="duty-group"><h4>Surfaces, cloths, and food</h4>
+      <ul>
+        <li>Use the <b>pink spray</b> on counters, the bar, and high-touch surfaces. Spray, then wipe with a clean cloth.</li>
+        <li>We don't use sanitizer buckets. When a cloth is dirty, put it in the <b>washing machine</b> and grab a clean one.</li>
+        <li>Keep milk and dairy cold, and label and date anything you open.</li>
+      </ul>
+    </div>
   </div>
 
   <div class="block">
@@ -521,6 +554,7 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; }
           <li>Keep cups, lids, plates and napkins stocked</li>
           <li>Take out trash when full</li>
           <li>Check the bathroom every 2 hours and log it on Sheet C</li>
+          <li>Wash your hands after the bathroom, trash, or any task that isn't making drinks</li>
         </ul>
       </div>
       <div class="duty-group"><h4>Before you leave (hand-off reset)</h4>
@@ -533,6 +567,7 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; }
           <li>Wipe sticky syrup pumps and sauce bottles</li>
           <li>Quick wipe of the baklava display, glass and surfaces</li>
           <li>Bathroom check: restock and wipe down</li>
+          <li>Put used cloths in the washing machine</li>
           <li>Mark anything low or out in the inventory app and tell the closer</li>
         </ul>
       </div>
@@ -549,7 +584,7 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; }
         <ul><li>Empty the grinder using the slider, then purge the remaining shots</li></ul>
       </div>
       <div class="duty-group"><h4>Shop</h4>
-        <ul><li>Wipe down counters and high-touch surfaces</li><li>Full bathroom clean (Sheet C)</li><li>Sweep and mop floors</li><li>Take out all trash</li></ul>
+        <ul><li>Wipe down counters and high-touch surfaces with the pink spray</li><li>Full bathroom clean (Sheet C)</li><li>Sweep and mop floors</li><li>Take out all trash</li><li>Put used cloths in the washing machine</li></ul>
       </div>
     </div>
   </div>
@@ -616,6 +651,7 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; }
     <div class="check"><span>Keep cups, lids, plates, and napkins stocked</span></div>
     <div class="check"><span>Take out trash when full</span></div>
     <div class="check"><span>Check the bathroom every 2 hours <em>(log it on Sheet C)</em></span></div>
+    <div class="check"><span><b>Wash your hands</b> after the bathroom, trash, or any non-drink task</span></div>
 
     <h3>Before you leave · hand-off reset</h3>
     <div class="check"><span>Wipe down the <b>big fridge</b> <em>(doors, handles, seals, spills inside)</em></span></div>
@@ -626,6 +662,7 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; }
     <div class="check"><span>Wipe sticky syrup pumps and sauce bottles</span></div>
     <div class="check"><span>Quick wipe of the <b>baklava display</b> <em>(glass and surfaces)</em></span></div>
     <div class="check"><span><b>Bathroom check</b> <em>(restock and wipe down)</em></span></div>
+    <div class="check"><span>Put used cloths in the <b>washing machine</b></span></div>
     <div class="check"><span>Mark low / out items in the inventory app</span></div>
     <div class="check"><span>Tell the closing team what's low, out, or unfinished</span></div>
   </div>
@@ -659,11 +696,12 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; }
     <div class="check"><span>Empty the grinder using the slider, then purge the remaining shots</span></div>
 
     <h3>Shop</h3>
-    <div class="check"><span>Wipe down counters and high-touch surfaces</span></div>
+    <div class="check"><span>Wipe down counters and high-touch surfaces <em>(pink spray)</em></span></div>
     <div class="check"><span><b>Full bathroom clean</b> <em>(Sheet C)</em></span></div>
     <div class="check"><span>Sweep floors</span></div>
     <div class="check"><span>Mop floors</span></div>
     <div class="check"><span>Take out all trash</span></div>
+    <div class="check"><span>Put used cloths in the <b>washing machine</b></span></div>
     <div class="check"><span>Mark low / out items in the inventory app</span></div>
 
     <h3>Weekly · write the day it was done</h3>
