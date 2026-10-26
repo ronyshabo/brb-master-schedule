@@ -91,13 +91,15 @@ body {
   margin-top: 14px;
 }
 
-.barista-tabs button {
+.barista-tabs button,
+.barista-tabs a {
   padding: 9px 14px;
   border: 2px outset #fff;
   background: #c0c0c0;
   color: #000;
   font-family: 'Press Start 2P', 'Courier New', monospace;
   font-size: 0.6rem;
+  text-decoration: none;
   cursor: pointer;
 }
 

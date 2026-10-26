@@ -277,6 +277,8 @@ function SchedulePortal({ user }) {
             <button type="button" role="tab" aria-selected={tab === 'availability'} className={tab === 'availability' ? 'is-active' : ''} onClick={() => setTab('availability')}>
               My availability
             </button>
+            {/* The SOP is a static page in public/sop/. A new tab, so the installed app keeps its place. */}
+            <a href="/sop/" target="_blank" rel="noopener">SOP ↗</a>
           </nav>
 
           {tab === 'schedule' ? (

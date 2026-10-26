@@ -1,0 +1,732 @@
+<title>BRB Barista SOP</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: a single readable column with a jump bar on screen; on paper every part starts a new page and each checklist sheet fits exactly one page. */
+:root {
+  --paper: #f7f6f3;
+  --surface: #ffffff;
+  --ink: #241a14;
+  --muted: #6d625a;
+  --rule: #ddd6cf;
+  --accent: #c76a0a;
+  --accent-soft: #fbe9d4;
+  --warn: #b42318;
+  --warn-soft: #fde7e5;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #15110e; --surface: #1e1915; --ink: #f1ebe5; --muted: #a99d93; --rule: #3a312a;
+    --accent: #f59e0b; --accent-soft: #3a2a12; --warn: #f97066; --warn-soft: #3b1a17; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #15110e; --surface: #1e1915; --ink: #f1ebe5; --muted: #a99d93; --rule: #3a312a;
+  --accent: #f59e0b; --accent-soft: #3a2a12; --warn: #f97066; --warn-soft: #3b1a17; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink);
+  font: 400 1.0625rem/1.55 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 50rem; margin: 0 auto; padding-block: 2rem 4rem; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.15; margin: 0; }
+h1 { font-size: clamp(2.2rem, 7vw, 3.4rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: 1.85rem; font-weight: 800; }
+h3 { font-size: 1.2rem; font-weight: 600; }
+p { margin: 0; max-width: 65ch; }
+ul, ol { margin: 0; padding-left: 1.25rem; }
+li + li { margin-top: 0.2rem; }
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.eyebrow { font: 700 0.75rem/1 var(--body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+.muted { color: var(--muted); }
+
+/* cover */
+.cover { display: grid; gap: 0.75rem; padding-bottom: 1.75rem; border-bottom: 3px solid var(--ink); }
+.cover h1 span { color: var(--accent); }
+.cover .sub { font-size: 1.15rem; color: var(--muted); }
+
+/* jump bar */
+.jump {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--paper); border-bottom: 1px solid var(--rule);
+  display: flex; gap: 0.4rem; overflow-x: auto; padding-block: 0.6rem; margin-bottom: 1rem;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
+.jump a {
+  flex: none; text-decoration: none; color: var(--ink); font-weight: 600; font-size: 0.9rem;
+  padding: 0.35rem 0.75rem; border: 1px solid var(--rule); border-radius: 999px; background: var(--surface);
+}
+.jump a.key { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* contents */
+.toc { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.75rem; margin-top: 1.5rem; }
+.toc a { display: grid; gap: 0.2rem; text-decoration: none; color: var(--ink); padding: 0.9rem 1rem; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); }
+.toc a strong { font-family: var(--display); font-size: 1.1rem; }
+.toc a span { color: var(--muted); font-size: 0.92rem; }
+.toc a.key { border: 2px solid var(--accent); }
+
+/* parts */
+.part { display: grid; gap: 1.25rem; padding-top: 3rem; scroll-margin-top: 3.5rem; }
+.part-head { display: grid; gap: 0.4rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--rule); }
+.block { display: grid; gap: 0.6rem; }
+.note { padding: 0.75rem 1rem; border-radius: 8px; background: var(--accent-soft); }
+.note.warn { background: var(--warn-soft); }
+.note strong { color: var(--accent); }
+.note.warn strong { color: var(--warn); }
+
+/* recipe tables */
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.98rem; }
+th, td { text-align: left; vertical-align: top; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--rule); }
+th { font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+td:first-child { font-weight: 700; white-space: nowrap; }
+caption { text-align: left; font: 600 1.05rem var(--display); padding-bottom: 0.3rem; }
+.ref-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1.25rem 2rem; }
+.ref-grid > * { min-width: 0; }
+.specs { display: grid; grid-template-columns: max-content 1fr; gap: 0.15rem 1rem; }
+.specs dt { font-weight: 700; }
+.specs dd { margin: 0; font-variant-numeric: tabular-nums; }
+.recipes { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1.25rem 2rem; }
+.recipes > * { min-width: 0; }
+.recipe { display: grid; gap: 0.35rem; align-content: start; }
+.recipe h4 { margin: 0; font: 700 1.02rem var(--body); }
+
+/* inventory steps */
+.steps { display: grid; gap: 2rem; counter-reset: step; }
+.step { display: grid; grid-template-columns: minmax(0, 1fr) 13.5rem; gap: 1.25rem; align-items: start; break-inside: avoid; }
+.step-text { display: grid; gap: 0.5rem; min-width: 0; }
+.step-text h3::before { counter-increment: step; content: "Step " counter(step) " · "; color: var(--accent); }
+.shot { margin: 0; display: grid; gap: 0.35rem; }
+.shot img { width: 100%; max-width: 100%; border-radius: 14px; border: 1px solid var(--rule); display: block; }
+.shot figcaption { font-size: 0.82rem; color: var(--muted); }
+.key-list { display: grid; gap: 0.4rem; list-style: none; padding: 0; }
+.chip { display: inline-block; min-width: 3.2rem; text-align: center; font-weight: 700; font-size: 0.85rem; padding: 0.05rem 0.5rem; border-radius: 6px; margin-right: 0.35rem; }
+.chip.low { background: #f5b942; color: #241a14; }
+.chip.out { background: #ef5350; color: #fff; }
+.chip.q { background: var(--rule); color: var(--ink); }
+@media (max-width: 40rem) { .step { grid-template-columns: 1fr; } .shot { max-width: 18rem; } }
+
+/* schedule placeholder */
+.placeholder { border: 2px dashed var(--rule); border-radius: 12px; padding: 1.5rem; display: grid; gap: 0.5rem; }
+
+/* cleaning */
+.expect { display: grid; gap: 0.9rem; list-style: none; padding: 0; counter-reset: ex; }
+.expect li { display: grid; grid-template-columns: 2rem 1fr; gap: 0.75rem; margin: 0; }
+.expect li::before { counter-increment: ex; content: counter(ex); font: 800 1.4rem/1.2 var(--display); color: var(--accent); }
+.expect strong { display: block; }
+.split { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1.25rem 2rem; }
+.split > * { min-width: 0; }
+.duty-group { display: grid; gap: 0.35rem; }
+.duty-group h4 { margin: 0; font: 700 0.8rem var(--body); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+
+/* checklist sheets */
+.sheet { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 1.5rem; display: grid; gap: 1rem; margin-top: 3rem; scroll-margin-top: 3.5rem; }
+.sheet-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 0.75rem; border-bottom: 3px solid var(--ink); padding-bottom: 0.6rem; }
+.sheet-head h2 { font-size: 1.7rem; }
+.fill { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; font-weight: 600; font-size: 0.95rem; }
+.fill span { display: inline-flex; gap: 0.4rem; align-items: end; }
+.fill i { display: inline-block; width: 8rem; border-bottom: 1px solid var(--ink); height: 1.1em; }
+.checks { display: grid; gap: 0.2rem; }
+.checks h3 { font-size: 1rem; margin-top: 0.5rem; padding-bottom: 0.2rem; border-bottom: 1px solid var(--rule); }
+.check { display: grid; grid-template-columns: 1.1rem 1fr; gap: 0.6rem; align-items: start; padding-block: 0.22rem; }
+.check::before { content: ""; width: 1rem; height: 1rem; border: 1.5px solid var(--ink); border-radius: 3px; margin-top: 0.2rem; }
+.check em { font-style: normal; color: var(--muted); font-size: 0.9em; }
+.log-wrap { overflow-x: auto; }
+.log { border-collapse: collapse; width: 100%; min-width: 34rem; font-size: 0.92rem; table-layout: fixed; }
+.log th, .log td { border: 1px solid var(--rule); padding: 0.32rem 0.45rem; }
+.log thead th { text-align: center; color: var(--ink); background: var(--accent-soft); }
+.log thead th:first-child { text-align: left; width: 42%; }
+.log td:first-child { font-weight: 400; white-space: normal; }
+.log td:not(:first-child) { height: 1.75rem; }
+.log tr.group th { text-align: left; font: 700 0.75rem var(--body); letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); background: transparent; border-inline: 0; padding-top: 0.6rem; }
+.log tr.mgr td { font-weight: 700; border-top: 2px solid var(--ink); }
+.bath-log thead th:first-child { width: 18%; text-align: center; }
+.bath-log td { height: 1.75rem; }
+.signoff { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; font-weight: 600; padding-top: 0.6rem; border-top: 1px solid var(--rule); font-size: 0.95rem; }
+.signoff span { display: inline-flex; gap: 0.4rem; align-items: end; }
+.signoff i { display: inline-block; width: 9rem; border-bottom: 1px solid var(--ink); height: 1.1em; }
+
+footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; }
+
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+/* ---------- paper ---------- */
+@page { size: letter; margin: 0.55in; }
+@media print {
+  :root, :root[data-theme="dark"], :root:not([data-theme="light"]) {
+    --paper: #fff; --surface: #fff; --ink: #111; --muted: #555; --rule: #bbb;
+    --accent: #a85400; --accent-soft: #f6efe6; --warn: #a11; --warn-soft: #f8eded; color-scheme: light;
+  }
+  body { font-size: 10.5pt; padding: 0; }
+  body::before, .jump, .screen-only, footer { display: none !important; }
+  .wrap { max-width: none; padding: 0; }
+  .part, .sheet { break-before: page; padding-top: 0; }
+  .sheet { border: 0; border-radius: 0; padding: 0; margin: 0; gap: 0.55rem; }
+  .sheet .check { padding-block: 0.12rem; }
+  .log { min-width: 0; font-size: 9.5pt; }
+  .log thead th { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .steps { gap: 0.35in; }
+  .step { grid-template-columns: minmax(0, 1fr) 1.75in; }
+  .shot { max-width: none; }
+  .block, .recipe, .duty-group, table, .note { break-inside: avoid; }
+  h2, h3 { break-after: avoid; }
+  a { color: inherit; text-decoration: none; }
+  .chip.low, .chip.out { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
+</style>
+
+<div class="wrap">
+
+<header class="cover" id="top">
+  <span class="eyebrow">For internal use · all baristas</span>
+  <h1>BRB <span>Coffee</span><br>Barista SOP</h1>
+  <p class="sub">Recipes, the inventory app, scheduling, and cleaning standards. Keep a printed copy behind the bar.</p>
+</header>
+
+<nav class="jump" aria-label="Jump to part">
+  <a href="#recipes">Recipes</a>
+  <a href="#inventory">Inventory app</a>
+  <a href="#schedule">Schedule</a>
+  <a href="#cleaning" class="key">Cleaning</a>
+  <a href="#day-sheet">Day sheet</a>
+  <a href="#closing-sheet">Closing sheet</a>
+  <a href="#bathroom-sheet">Bathroom sheet</a>
+  <a href="#signoff-log">Sign-off log</a>
+</nav>
+
+<section aria-label="Contents">
+  <span class="eyebrow">What's inside</span>
+  <div class="toc">
+    <a href="#recipes"><strong>Part 1 · Recipes</strong><span>Quick reference card and full drink builds</span></a>
+    <a href="#inventory"><strong>Part 2 · Inventory app</strong><span>How to count, flag Low/Out, and request items</span></a>
+    <a href="#schedule"><strong>Part 3 · Schedule</strong><span>Coming soon</span></a>
+    <a href="#cleaning" class="key"><strong>Part 4 · Cleaning standards</strong><span>What we expect, who does what, and when</span></a>
+    <a href="#day-sheet"><strong>Sheet A · Day / shared shift</strong><span>Printable checklist</span></a>
+    <a href="#closing-sheet"><strong>Sheet B · Closing shift</strong><span>Printable checklist</span></a>
+    <a href="#bathroom-sheet"><strong>Sheet C · Bathroom</strong><span>Printable checklist and check log</span></a>
+    <a href="#signoff-log"><strong>Sheet D · End-of-shift sign-off</strong><span>Weekly initials log</span></a>
+  </div>
+</section>
+
+<!-- ===================== PART 1 ===================== -->
+<section class="part" id="recipes">
+  <div class="part-head">
+    <span class="eyebrow">Part 1</span>
+    <h2>Recipes &amp; drink builds</h2>
+    <p class="muted">Use the quick reference on shift. Full builds and method notes follow.</p>
+  </div>
+
+  <div class="note"><strong>Syrup standard:</strong> 2 pumps (0.5 oz) per drink unless the customer asks otherwise.</div>
+
+  <div class="ref-grid">
+    <div class="table-wrap"><table>
+      <caption>Drip coffee</caption>
+      <thead><tr><th>Drink</th><th>Build</th></tr></thead>
+      <tbody>
+        <tr><td>Pour over</td><td>17 g in / ~400 g out</td></tr>
+        <tr><td>Batch brew</td><td>160 g in / ½ gallon out</td></tr>
+      </tbody>
+    </table></div>
+    <div class="table-wrap"><table>
+      <caption>Cold drinks</caption>
+      <thead><tr><th>Drink</th><th>Build</th></tr></thead>
+      <tbody>
+        <tr><td>Iced latte</td><td>1 shot + 8 oz cold milk over ice</td></tr>
+        <tr><td>Cold brew</td><td>450 g beans + 16 qt water</td></tr>
+        <tr><td>Iced matcha</td><td>5 g matcha + 50 g hot water + 9 oz milk over ice</td></tr>
+      </tbody>
+    </table></div>
+    <div class="table-wrap"><table>
+      <caption>Espresso</caption>
+      <thead><tr><th>Drink</th><th>Build</th></tr></thead>
+      <tbody>
+        <tr><td>Espresso</td><td>18 g in / ~36 g out (28–32 s)</td></tr>
+        <tr><td>Americano, hot</td><td>1 shot + 8–12 oz hot water</td></tr>
+        <tr><td>Americano, iced</td><td>Quad shot + 10 oz water over ice</td></tr>
+        <tr><td>Macchiato</td><td>1 shot + ~3 oz foam</td></tr>
+        <tr><td>Cortado</td><td>1 shot + 4 oz silky steamed milk</td></tr>
+        <tr><td>Cappuccino</td><td>1 shot + 5 oz foam (cacao optional)</td></tr>
+        <tr><td>Latte</td><td>1 shot + 8–10 oz steamed milk</td></tr>
+        <tr><td>Mocha</td><td>1 shot + 1 oz chocolate + 8 oz milk</td></tr>
+      </tbody>
+    </table></div>
+    <div class="table-wrap"><table>
+      <caption>Signature drinks</caption>
+      <thead><tr><th>Drink</th><th>Build</th></tr></thead>
+      <tbody>
+        <tr><td>Desert / Midnight Rose</td><td>2 pumps rose + 1.5 oz tahini + 6 oz milk (frothed) · espresso on the side · black seed</td></tr>
+        <tr><td>Espresso tonic</td><td>Ice + 1 pump vanilla + ½ oz lemon + sparkling water · espresso on top</td></tr>
+        <tr><td>Pistachio mocha</td><td>Espresso + 1 oz chocolate · 9 oz milk + 2 pumps pistachio + 1 oz pistachio butter (frothed)</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="block">
+    <h3>1 · Drip coffee</h3>
+    <div class="recipes">
+      <div class="recipe">
+        <h4>Pour over</h4>
+        <dl class="specs">
+          <dt>Grind</dt><dd>Drip setting</dd>
+          <dt>Strong</dt><dd>20 g / ~400 g</dd>
+          <dt>Standard</dt><dd>16–17 g / ~400 g</dd>
+          <dt>Light</dt><dd>14 g / ~400 g</dd>
+          <dt>Water</dt><dd>190–200 °F</dd>
+        </dl>
+        <ol><li>Bloom with 30–40 g water for 30 s.</li><li>Slow, steady pour to ~400 g.</li><li>Serve in a 12 oz cup with lid and stamped sleeve.</li></ol>
+      </div>
+      <div class="recipe">
+        <h4>Batch brew</h4>
+        <ol><li>Insert a large filter.</li><li>Add 160 g ground coffee.</li><li>Brew on the ½-gallon setting.</li></ol>
+      </div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>2 · Espresso standards</h3>
+    <div class="recipes">
+      <div class="recipe">
+        <h4>Espresso shot</h4>
+        <dl class="specs">
+          <dt>Dose</dt><dd>18 g</dd>
+          <dt>Grind</dt><dd>Fine (table-salt texture)</dd>
+          <dt>Yield</dt><dd>~36 g in 28–32 s</dd>
+          <dt>Taste</dt><dd>Sweet, rich, balanced</dd>
+        </dl>
+      </div>
+      <div class="recipe">
+        <h4>Espresso drink builds</h4>
+        <ul>
+          <li><b>Americano, hot:</b> espresso → 8–12 oz hot water</li>
+          <li><b>Americano, iced:</b> quad shot → ice → filtered water</li>
+          <li><b>Macchiato:</b> espresso + ~3 oz foam</li>
+          <li><b>Cortado:</b> espresso + 4 oz silky steamed milk</li>
+          <li><b>Cappuccino:</b> espresso + 5 oz foam (cacao optional)</li>
+          <li><b>Latte:</b> espresso + 8–10 oz milk, thin foam</li>
+          <li><b>Mocha:</b> espresso + 1 oz chocolate, stir, add milk</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>3 · Cold drinks</h3>
+    <div class="recipes">
+      <div class="recipe"><h4>Iced latte</h4><ol><li>Ice → 8 oz cold milk.</li><li>Add syrup if needed.</li><li>Pour espresso on top.</li></ol></div>
+      <div class="recipe"><h4>Cold brew</h4>
+        <dl class="specs"><dt>Beans</dt><dd>450 g, coarse</dd><dt>Water</dt><dd>16 qt filtered</dd><dt>Steep</dt><dd>12–18 hours</dd><dt>Serve</dt><dd>Over ice</dd></dl>
+      </div>
+      <div class="recipe"><h4>Iced matcha</h4><ol><li>Whisk 5 g matcha + 50 g hot water until smooth.</li><li>Pour over ice + 9 oz milk.</li></ol></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>4 · Specialty lattes</h3>
+    <div class="recipes">
+      <div class="recipe"><h4>Pistachio latte</h4>
+        <ul><li><b>Hot:</b> steam 10–11 oz milk + 0.5 oz syrup → espresso → pistachio powder</li><li><b>Iced:</b> milk + syrup over ice → espresso on top → garnish</li></ul>
+      </div>
+      <div class="recipe"><h4>Cardamom latte</h4><p>Same build as pistachio, cardamom syrup.</p></div>
+      <div class="recipe"><h4>Rose latte</h4><p>Same build as pistachio, rose syrup.</p></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>5 · Teas &amp; other drinks</h3>
+    <div class="recipes">
+      <div class="recipe"><h4>Matcha latte (hot)</h4><p>Whisk 5 g matcha with 50 g water (10 g water per gram). Add 8 oz steamed milk.</p></div>
+      <div class="recipe"><h4>Chai latte</h4><p>1:1 chai concentrate to milk. <b>Hot:</b> steam together. <b>Iced:</b> pour over ice, cinnamon garnish.</p></div>
+      <div class="recipe"><h4>Golden milk</h4><p>Same method as chai, golden milk base.</p></div>
+      <div class="recipe"><h4>Hot chocolate</h4><p>1 oz chocolate + 8 oz steamed milk.</p></div>
+      <div class="recipe"><h4>Iced tea</h4><p>Steep pouch 5 min hot → dilute → chill.</p></div>
+      <div class="recipe"><h4>Lemonade</h4><p>2 oz concentrate + 12 oz filtered water. Optional ½ oz lemon juice to adjust acidity.</p></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>6 · Signature &amp; specialty drinks</h3>
+    <div class="recipes">
+      <div class="recipe"><h4>Pistachio cardamom latte</h4><ul><li><b>Hot:</b> 9 oz milk + 1 pump each syrup</li><li><b>Iced:</b> 10 oz milk + 1 pump each → ice → espresso</li><li>Garnish: pistachio powder</li></ul></div>
+      <div class="recipe"><h4>Desert Rose / Midnight Rose</h4><ul><li>2 pumps rose syrup + 1.5 oz tahini (blond or black)</li><li>Froth with 6 oz milk</li><li>Espresso shot on the side</li><li>Garnish: black seed</li></ul></div>
+      <div class="recipe"><h4>Pistachio mocha</h4><ul><li>Espresso over 1 oz chocolate</li><li>9 oz milk + 2 pumps pistachio + 1 oz pistachio butter (frothed)</li><li><b>Iced:</b> drizzle chocolate and pistachio butter inside the cup first</li><li>Garnish: pistachio powder</li></ul></div>
+      <div class="recipe"><h4>Velvet pistachio</h4><ul><li>Espresso over 1 oz pistachio butter</li><li>2–4 oz frothed milk</li><li>Top with whipped cream + pistachio syrup</li><li>Garnish: pistachio powder and butter</li></ul></div>
+      <div class="recipe"><h4>Espresso tonic</h4><ol><li>Ice + 1 pump vanilla + ½ oz lemon juice.</li><li>Sparkling water → espresso on top.</li></ol></div>
+      <div class="recipe"><h4>Turkish coffee</h4><ol><li>Heat 6 oz water in the ibrik.</li><li>Add 2 spoons coffee as the water boils.</li><li>Stop when the crema darkens.</li></ol></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== PART 2 ===================== -->
+<section class="part" id="inventory">
+  <div class="part-head">
+    <span class="eyebrow">Part 2</span>
+    <h2>Using the inventory app</h2>
+    <p class="muted">Open <b>inventory.brbcoffee-atx.com</b> on the shop tablet or your phone. No login. Every count and flag you make goes straight to the manager's order list, so keep it honest and current.</p>
+  </div>
+
+  <div class="note"><strong>When to use it:</strong> count during your shift whenever you open a new case or notice something running low, and before you leave. If you used the last one, mark it <b>Out</b> right away.</div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-text">
+        <h3>Type your name</h3>
+        <p>Tap the <b>Counting as</b> box at the top right and type your name. The device remembers it, so you only do this once per phone or tablet.</p>
+        <p class="muted">Your name shows next to every count, so the manager knows who to ask about it.</p>
+      </div>
+      <figure class="shot"><img src="images/inv-02-name.png" alt="Inventory app with the name box highlighted at the top right"><figcaption>Name box at the top right. Count tab is open.</figcaption></figure>
+    </div>
+
+    <div class="step">
+      <div class="step-text">
+        <h3>Count what's on hand</h3>
+        <p>On the <b>Count</b> tab, items are grouped by where we buy them (HEB, Odeko, Medici, Other). Read the note under each group. It tells you things like order cutoffs.</p>
+        <ul>
+          <li>Tap <b>+</b> or <b>−</b> to change the number, or tap the number and type it.</li>
+          <li>Count in the unit shown under the item name (bag, gallon, sleeve of 50…).</li>
+          <li>A <span class="chip q">?</span> means nobody has counted it yet.</li>
+        </ul>
+        <p class="muted">The pills under the search bar (HEB, Medici…) jump straight to that group. The red number is how many items there need attention.</p>
+      </div>
+      <figure class="shot"><img src="images/inv-05-flag-low.png" alt="List of items with counts, plus and minus buttons, and Low and Out buttons"><figcaption>Each row: count, then Low / Out.</figcaption></figure>
+    </div>
+
+    <div class="step">
+      <div class="step-text">
+        <h3>Flag Low or Out</h3>
+        <ul class="key-list">
+          <li><span class="chip low">Low</span> We still have some, but it needs to be on the next order.</li>
+          <li><span class="chip out">Out</span> None left. Tap it the moment you use the last one.</li>
+        </ul>
+        <p>Tap the same button again to clear the flag once the stock is back.</p>
+        <p>Tap the <b>Low &amp; out</b> filter to see only flagged items. Use it at the end of your shift to double-check the list before handing off.</p>
+      </div>
+      <figure class="shot"><img src="images/inv-06-filter-low-out.png" alt="Low and out filter selected, showing only flagged items"><figcaption>Low &amp; out filter: only flagged items.</figcaption></figure>
+    </div>
+
+    <div class="step">
+      <div class="step-text">
+        <h3>Ask for something new: "We could use…"</h3>
+        <p>Need something that isn't on the list, have a product idea, or found broken gear? Tap <b>＋ We could use…</b>, type it, and tap <b>Add</b>.</p>
+        <p>Check the open requests first so you don't add the same thing twice.</p>
+      </div>
+      <figure class="shot"><img src="images/inv-04-request.png" alt="We could use box opened with a text field and open requests below"><figcaption>Requests box, with open requests listed.</figcaption></figure>
+    </div>
+
+    <div class="step">
+      <div class="step-text">
+        <h3>Check the On hand tab</h3>
+        <p>The <b>On hand</b> tab is read-only. It shows the latest count, when it was counted, and a status:</p>
+        <ul>
+          <li><b>In stock</b>, <b>Low</b>, <b>Out</b>, or <b>Not counted</b></li>
+          <li><b>On order</b> means the manager already ordered it. Don't buy it yourself.</li>
+        </ul>
+        <p class="muted">Search and Source / Category switch work the same on both tabs.</p>
+      </div>
+      <figure class="shot"><img src="images/inv-08-on-hand.png" alt="On hand tab listing quantities with In stock, Low, Out and On order labels"><figcaption>On hand: quantities and status.</figcaption></figure>
+    </div>
+  </div>
+
+  <div class="note warn"><strong>If it says "That change didn't save":</strong> check the Wi-Fi and tap again. The page reconnects by itself.</div>
+  <p class="muted" style="font-size:0.85rem">Screenshots use sample items. The real list in the app may differ.</p>
+</section>
+
+<!-- ===================== PART 3 ===================== -->
+<section class="part" id="schedule">
+  <div class="part-head">
+    <span class="eyebrow">Part 3</span>
+    <h2>Schedule</h2>
+  </div>
+  <div class="placeholder">
+    <h3>Coming soon</h3>
+    <p>The new scheduling app is being built. This section will cover how to view your shifts, request time off, and swap shifts. Until then, follow the schedule your manager posts.</p>
+  </div>
+</section>
+
+<!-- ===================== PART 4 ===================== -->
+<section class="part" id="cleaning">
+  <div class="part-head">
+    <span class="eyebrow">Part 4 · Most important</span>
+    <h2>Cleaning standards</h2>
+    <p class="muted">A clean bar is part of every drink we serve. These are the standards every barista is held to, on every shift.</p>
+  </div>
+
+  <div class="block">
+    <h3>What we expect from you</h3>
+    <ol class="expect">
+      <li><div><strong>Clean as you go.</strong> Don't save messes for later. Wipe spills, purge the wand, and rinse pitchers as you work. A busy rush is not an excuse to leave the bar dirty.</div></li>
+      <li><div><strong>Nothing is someone else's job.</strong> If you see it, clean it. Shift lists split the big tasks, but every barista keeps the space clean.</div></li>
+      <li><div><strong>Leave it better than you found it.</strong> The next shift should be able to start making drinks the minute they walk in.</div></li>
+      <li><div><strong>Finish your list before you clock out.</strong> Work through your shift's checklist, initial each line, and sign the bottom.</div></li>
+      <li><div><strong>Can't finish something? Say so.</strong> Tell the next shift and your manager what's left and why. Write it on the sheet. Never skip a task quietly.</div></li>
+      <li><div><strong>Food safety comes first.</strong> Use sanitizer at the right strength, keep raw dairy cold, label and date what you open, and wash your hands after cleaning and before handling food or drinks.</div></li>
+      <li><div><strong>Customers can see the bar.</strong> Counters, the baklava display, and the condiment area should look ready at all times.</div></li>
+      <li><div><strong>Report broken or worn gear.</strong> Use "We could use…" in the inventory app, and tell your manager if it affects drink quality or safety.</div></li>
+    </ol>
+  </div>
+
+  <div class="block">
+    <h3>Who does what</h3>
+    <p>Cleaning is split by shift so nothing falls through the cracks. The <b>day / shared shift</b> keeps the bar clean during service and does a mid-day reset before handing off. The <b>closing shift</b> does the full equipment clean and sets up the shop to open clean the next day.</p>
+  </div>
+
+  <div class="split">
+    <div class="block">
+      <h3>Day / shared shift</h3>
+      <div class="duty-group"><h4>During your shift</h4>
+        <ul>
+          <li>Purge and wipe the steam wand after every drink</li>
+          <li>Flush the group head and wipe the basket between shots</li>
+          <li>Rinse milk pitchers after each use</li>
+          <li>Wipe spills right away and keep counters dry</li>
+          <li>Empty the knock box before it's full</li>
+          <li>Keep cups, lids, plates and napkins stocked</li>
+          <li>Take out trash when full</li>
+          <li>Check the bathroom every 2 hours and log it on Sheet C</li>
+        </ul>
+      </div>
+      <div class="duty-group"><h4>Before you leave (hand-off reset)</h4>
+        <ul>
+          <li>Wipe down the big fridge</li>
+          <li>Wipe down the small fridge</li>
+          <li>Pull and wash the bar mats under the matcha station</li>
+          <li>Pull and wash the syrup mats (washing machine)</li>
+          <li>Pull and wash the sauce mats</li>
+          <li>Wipe sticky syrup pumps and sauce bottles</li>
+          <li>Quick wipe of the baklava display, glass and surfaces</li>
+          <li>Bathroom check: restock and wipe down</li>
+          <li>Mark anything low or out in the inventory app and tell the closer</li>
+        </ul>
+      </div>
+    </div>
+    <div class="block">
+      <h3>Closing shift</h3>
+      <div class="duty-group"><h4>Restocking</h4>
+        <ul><li>Refill the chocolate sauce bottle</li><li>Refill the pistachio butter</li><li>Check and refill other low syrups and bases</li></ul>
+      </div>
+      <div class="duty-group"><h4>Espresso machine</h4>
+        <ul><li>Backflush group heads with espresso cleaner (5 rounds × 10 s)</li><li>Purge and wipe down steam wands</li><li>Brush and clean portafilters and baskets</li><li>Empty and clean the drip tray</li><li>Empty and clean the knock box</li></ul>
+      </div>
+      <div class="duty-group"><h4>Grinder</h4>
+        <ul><li>Empty the grinder using the slider, then purge the remaining shots</li></ul>
+      </div>
+      <div class="duty-group"><h4>Shop</h4>
+        <ul><li>Wipe down counters and high-touch surfaces</li><li>Full bathroom clean (Sheet C)</li><li>Sweep and mop floors</li><li>Take out all trash</li></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>Bathroom</h3>
+    <p>Customers judge the whole shop by the bathroom. Check it every 2 hours while we're open, and clean it fully at close.</p>
+    <div class="split">
+      <div class="duty-group"><h4>Quick check (every 2 hours)</h4>
+        <ul>
+          <li>Restock toilet paper, paper towels, and hand soap</li>
+          <li>Wipe the sink, faucet, and counter</li>
+          <li>Check the toilet seat and bowl; clean if needed</li>
+          <li>Empty the trash if it's half full or more</li>
+          <li>Pick up paper and spot-mop spills on the floor</li>
+          <li>Write the time and your initials on the log (Sheet C)</li>
+        </ul>
+      </div>
+      <div class="duty-group"><h4>Full clean (closing)</h4>
+        <ul>
+          <li>Scrub the inside of the toilet bowl with toilet cleaner and brush</li>
+          <li>Disinfect the seat, lid, base, and flush handle</li>
+          <li>Clean and disinfect the sink, faucet, and counter</li>
+          <li>Clean the mirror</li>
+          <li>Disinfect the door handle, lock, light switch, and dispensers</li>
+          <li>Empty the trash and replace the liner</li>
+          <li>Restock toilet paper, paper towels, and soap</li>
+          <li>Sweep and mop the floor</li>
+        </ul>
+      </div>
+    </div>
+    <div class="note warn"><strong>Keep bathroom tools separate.</strong> Bathroom gloves, brushes, cloths, and mop never touch the bar or food areas. Wash your hands after every bathroom check before you go back behind the bar.</div>
+  </div>
+
+  <div class="split">
+    <div class="block">
+      <h3>Weekly</h3>
+      <ul><li>Clean the grinder hopper and burr area</li><li>Clean the top grill on the espresso machine</li><li>Descale brewers</li><li>Deep clean refrigerator shelves</li><li>Clean the espresso machine top grill</li><li>Scrub bathroom walls, door, and floor edges</li></ul>
+    </div>
+    <div class="block">
+      <h3>Monthly</h3>
+      <ul><li>Check filters and calibration</li><li>Schedule preventive maintenance</li></ul>
+    </div>
+  </div>
+
+  <p class="screen-only muted">Printable checklists follow: day shift, closing shift, bathroom, and a weekly sign-off log.</p>
+</section>
+
+<!-- ===================== SHEET A ===================== -->
+<section class="sheet" id="day-sheet">
+  <div class="sheet-head">
+    <div><span class="eyebrow">BRB Coffee · Sheet A</span><h2>Day / Shared Shift Cleaning</h2></div>
+    <div class="fill"><span>Date <i></i></span></div>
+  </div>
+  <div class="fill"><span>Barista(s) <i style="width:14rem"></i></span></div>
+
+  <div class="checks">
+    <h3>During your shift · clean as you go</h3>
+    <div class="check"><span>Purge and wipe the steam wand after every drink</span></div>
+    <div class="check"><span>Flush the group head and wipe the basket between shots</span></div>
+    <div class="check"><span>Rinse milk pitchers after each use</span></div>
+    <div class="check"><span>Wipe spills right away; keep counters dry</span></div>
+    <div class="check"><span>Empty the knock box before it's full</span></div>
+    <div class="check"><span>Keep cups, lids, plates, and napkins stocked</span></div>
+    <div class="check"><span>Take out trash when full</span></div>
+    <div class="check"><span>Check the bathroom every 2 hours <em>(log it on Sheet C)</em></span></div>
+
+    <h3>Before you leave · hand-off reset</h3>
+    <div class="check"><span>Wipe down the <b>big fridge</b> <em>(doors, handles, seals, spills inside)</em></span></div>
+    <div class="check"><span>Wipe down the <b>small fridge</b> <em>(doors, handles, seals, spills inside)</em></span></div>
+    <div class="check"><span>Pull and wash the <b>bar mats under the matcha station</b></span></div>
+    <div class="check"><span>Pull and wash the <b>syrup mats</b> <em>(washing machine)</em></span></div>
+    <div class="check"><span>Pull and wash the <b>sauce mats</b></span></div>
+    <div class="check"><span>Wipe sticky syrup pumps and sauce bottles</span></div>
+    <div class="check"><span>Quick wipe of the <b>baklava display</b> <em>(glass and surfaces)</em></span></div>
+    <div class="check"><span><b>Bathroom check</b> <em>(restock and wipe down)</em></span></div>
+    <div class="check"><span>Mark low / out items in the inventory app</span></div>
+    <div class="check"><span>Tell the closing team what's low, out, or unfinished</span></div>
+  </div>
+
+  <div class="fill" style="display:grid;gap:0.4rem"><span>Notes for the closing team</span><i style="width:100%"></i><i style="width:100%"></i></div>
+  <div class="signoff"><span>Completed by <i></i></span><span>Time <i style="width:5rem"></i></span><span>Checked by <i></i></span></div>
+</section>
+
+<!-- ===================== SHEET B ===================== -->
+<section class="sheet" id="closing-sheet">
+  <div class="sheet-head">
+    <div><span class="eyebrow">BRB Coffee · Sheet B</span><h2>Closing Shift Cleaning</h2></div>
+    <div class="fill"><span>Date <i></i></span></div>
+  </div>
+  <div class="fill"><span>Barista(s) <i style="width:14rem"></i></span></div>
+
+  <div class="checks">
+    <h3>Restocking</h3>
+    <div class="check"><span>Refill the chocolate sauce bottle</span></div>
+    <div class="check"><span>Refill the pistachio butter</span></div>
+    <div class="check"><span>Check and refill other low syrups and bases</span></div>
+
+    <h3>Espresso machine</h3>
+    <div class="check"><span>Backflush group heads with espresso cleaner <em>(5 rounds × 10 s)</em></span></div>
+    <div class="check"><span>Purge and wipe down steam wands</span></div>
+    <div class="check"><span>Brush and clean portafilters and baskets</span></div>
+    <div class="check"><span>Empty and clean the drip tray</span></div>
+    <div class="check"><span>Empty and clean the knock box</span></div>
+
+    <h3>Grinder</h3>
+    <div class="check"><span>Empty the grinder using the slider, then purge the remaining shots</span></div>
+
+    <h3>Shop</h3>
+    <div class="check"><span>Wipe down counters and high-touch surfaces</span></div>
+    <div class="check"><span><b>Full bathroom clean</b> <em>(Sheet C)</em></span></div>
+    <div class="check"><span>Sweep floors</span></div>
+    <div class="check"><span>Mop floors</span></div>
+    <div class="check"><span>Take out all trash</span></div>
+    <div class="check"><span>Mark low / out items in the inventory app</span></div>
+
+    <h3>Weekly · write the day it was done</h3>
+    <div class="check"><span>Clean the grinder hopper and burr area</span></div>
+    <div class="check"><span>Descale brewers</span></div>
+    <div class="check"><span>Deep clean refrigerator shelves</span></div>
+    <div class="check"><span>Clean the espresso machine top grill</span></div>
+  </div>
+
+  <div class="fill" style="display:grid;gap:0.4rem"><span>Notes for the opening team</span><i style="width:100%"></i><i style="width:100%"></i></div>
+  <div class="signoff"><span>Completed by <i></i></span><span>Time <i style="width:5rem"></i></span><span>Checked by <i></i></span></div>
+</section>
+
+<!-- ===================== SHEET C ===================== -->
+<section class="sheet" id="bathroom-sheet">
+  <div class="sheet-head">
+    <div><span class="eyebrow">BRB Coffee · Sheet C</span><h2>Bathroom Cleaning</h2></div>
+    <div class="fill"><span>Date <i></i></span></div>
+  </div>
+
+  <div class="checks">
+    <h3>Quick check · every 2 hours while open</h3>
+    <div class="check"><span>Restock toilet paper, paper towels, and hand soap</span></div>
+    <div class="check"><span>Wipe the sink, faucet, and counter</span></div>
+    <div class="check"><span>Check the toilet seat and bowl; clean if needed</span></div>
+    <div class="check"><span>Empty the trash if it's half full or more</span></div>
+    <div class="check"><span>Pick up paper and spot-mop spills</span></div>
+
+    <h3>Full clean · closing shift</h3>
+    <div class="check"><span>Scrub the inside of the toilet bowl <em>(toilet cleaner and brush)</em></span></div>
+    <div class="check"><span>Disinfect the seat, lid, base, and flush handle</span></div>
+    <div class="check"><span>Clean and disinfect the sink, faucet, and counter</span></div>
+    <div class="check"><span>Clean the mirror</span></div>
+    <div class="check"><span>Disinfect the door handle, lock, light switch, and dispensers</span></div>
+    <div class="check"><span>Empty the trash and replace the liner</span></div>
+    <div class="check"><span>Restock toilet paper, paper towels, and soap</span></div>
+    <div class="check"><span>Sweep and mop the floor</span></div>
+    <div class="check"><span>Put bathroom tools away, then wash your hands</span></div>
+  </div>
+
+  <div class="log-wrap"><table class="log bath-log">
+    <caption>Check log · write the time and your initials after each check</caption>
+    <thead><tr><th>Time</th><th>Initials</th><th>Time</th><th>Initials</th></tr></thead>
+    <tbody>
+        <tr><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ===================== SHEET D ===================== -->
+<section class="sheet" id="signoff-log">
+  <div class="sheet-head">
+    <div><span class="eyebrow">BRB Coffee · Sheet D</span><h2>End-of-Shift Sign-Off</h2></div>
+    <div class="fill"><span>Week of <i></i></span></div>
+  </div>
+  <p class="muted">Before you clock out, go down your shift's list and put your initials under today for each task you finished. Your initials mean it's done to standard. Leave a box empty if it isn't, and tell your manager why.</p>
+
+  <div class="log-wrap"><table class="log">
+    <thead>
+        <tr><th>Task</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr>
+    </thead>
+    <tbody>
+        <tr class="group"><th colspan="8">Day / shared shift · before you leave</th></tr>
+        <tr><td>Both fridges wiped</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>Matcha, syrup &amp; sauce mats washed</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>Syrup pumps &amp; sauce bottles wiped</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>Baklava display wiped</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>Bathroom checked &amp; restocked</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>Low / out marked in the app</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>Closing team told what’s left</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr class="group"><th colspan="8">Closing shift</th></tr>
+        <tr><td>Chocolate, pistachio butter &amp; syrups refilled</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>Group heads backflushed</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>Steam wands purged &amp; wiped</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>Portafilters &amp; baskets cleaned</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>Drip tray &amp; knock box cleaned</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>Grinder emptied &amp; purged</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>Counters &amp; high-touch surfaces wiped</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>Full bathroom clean</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>Floors swept &amp; mopped</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>All trash out</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>Low / out marked in the app</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr class="mgr"><td>Manager check</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<footer>BRB Coffee · Barista SOP · Internal use only</footer>
+</div>
