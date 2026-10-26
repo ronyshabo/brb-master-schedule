@@ -58,18 +58,35 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outlin
 .cover h1 span { color: var(--accent); }
 .cover .sub { font-size: 1.15rem; color: var(--muted); }
 
-/* jump bar */
-.jump {
+/* top bar: search + jump pills, stuck to the top on screen */
+.topbar {
   position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
   background: var(--paper); border-bottom: 1px solid var(--rule);
-  display: flex; gap: 0.4rem; overflow-x: auto; padding-block: 0.6rem; margin-bottom: 1rem;
+  display: grid; gap: 0.5rem; padding-block: 0.6rem; margin-bottom: 1rem;
 }
+.jump { display: flex; gap: 0.4rem; overflow-x: auto; }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
 .jump a {
   flex: none; text-decoration: none; color: var(--ink); font-weight: 600; font-size: 0.9rem;
   padding: 0.35rem 0.75rem; border: 1px solid var(--rule); border-radius: 999px; background: var(--surface);
 }
 .jump a.key { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* search */
+.search { display: flex; gap: 0.4rem; align-items: center; }
+.search input {
+  flex: 1; min-width: 0; font: inherit; font-size: 1rem; color: var(--ink);
+  padding: 0.45rem 0.85rem; border: 1px solid var(--rule); border-radius: 999px; background: var(--surface);
+}
+.search input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.search-count { font-size: 0.85rem; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.search button {
+  flex: none; width: 2.25rem; height: 2.25rem; font: inherit; color: var(--ink); cursor: pointer;
+  border: 1px solid var(--rule); border-radius: 999px; background: var(--surface);
+}
+.search button:disabled { opacity: 0.4; cursor: default; }
+mark { background: var(--accent-soft); color: inherit; border-radius: 3px; box-shadow: 0 0 0 1px var(--accent); }
+mark.current { background: var(--accent); color: #fff; }
 
 /* contents */
 .toc { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.75rem; margin-top: 1.5rem; }
@@ -79,7 +96,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .toc a.key { border: 2px solid var(--accent); }
 
 /* parts */
-.part { display: grid; gap: 1.25rem; padding-top: 3rem; scroll-margin-top: 3.5rem; }
+.part { display: grid; gap: 1.25rem; padding-top: 3rem; scroll-margin-top: 6.5rem; }
 .part-head { display: grid; gap: 0.4rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--rule); }
 .block { display: grid; gap: 0.6rem; }
 .note { padding: 0.75rem 1rem; border-radius: 8px; background: var(--accent-soft); }
@@ -133,7 +150,7 @@ caption { text-align: left; font: 600 1.05rem var(--display); padding-bottom: 0.
 .duty-group h4 { margin: 0; font: 700 0.8rem var(--body); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
 
 /* checklist sheets */
-.sheet { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 1.5rem; display: grid; gap: 1rem; margin-top: 3rem; scroll-margin-top: 3.5rem; }
+.sheet { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 1.5rem; display: grid; gap: 1rem; margin-top: 3rem; scroll-margin-top: 6.5rem; }
 .sheet-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 0.75rem; border-bottom: 3px solid var(--ink); padding-bottom: 0.6rem; }
 .sheet-head h2 { font-size: 1.7rem; }
 .fill { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; font-weight: 600; font-size: 0.95rem; }
@@ -171,7 +188,8 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; }
     --accent: #a85400; --accent-soft: #f6efe6; --warn: #a11; --warn-soft: #f8eded; color-scheme: light;
   }
   body { font-size: 10.5pt; padding: 0; }
-  body::before, .jump, .screen-only, footer { display: none !important; }
+  body::before, .topbar, .screen-only, footer { display: none !important; }
+  mark, mark.current { background: none; color: inherit; box-shadow: none; }
   .wrap { max-width: none; padding: 0; }
   .part, .sheet { break-before: page; padding-top: 0; }
   .sheet { border: 0; border-radius: 0; padding: 0; margin: 0; gap: 0.55rem; }
@@ -196,6 +214,13 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; }
   <p class="sub">Recipes, the inventory app, scheduling, and cleaning standards. Keep a printed copy behind the bar.</p>
 </header>
 
+<div class="topbar">
+<form class="search" role="search" id="search">
+  <input type="search" id="search-input" placeholder="Search: cortado, bathroom, Low…" aria-label="Search the SOP" autocomplete="off" enterkeyhint="search">
+  <span class="search-count" id="search-count" aria-live="polite"></span>
+  <button type="button" id="search-prev" aria-label="Previous match" disabled>↑</button>
+  <button type="button" id="search-next" aria-label="Next match" disabled>↓</button>
+</form>
 <nav class="jump" aria-label="Jump to part">
   <a href="#recipes">Recipes</a>
   <a href="#inventory">Inventory app</a>
@@ -206,6 +231,7 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; }
   <a href="#bathroom-sheet">Bathroom sheet</a>
   <a href="#signoff-log">Sign-off log</a>
 </nav>
+</div>
 
 <section aria-label="Contents">
   <span class="eyebrow">What's inside</span>
@@ -734,3 +760,87 @@ footer { margin-top: 3rem; color: var(--muted); font-size: 0.85rem; }
 
 <footer>BRB Coffee · Barista SOP · Internal use only</footer>
 </div>
+
+<script>
+(() => {
+  const form = document.getElementById('search');
+  const input = document.getElementById('search-input');
+  const count = document.getElementById('search-count');
+  const prev = document.getElementById('search-prev');
+  const next = document.getElementById('search-next');
+  const content = document.querySelector('.wrap');
+  let marks = [];
+  let current = -1;
+  let searched = '';
+  let timer;
+
+  function clear() {
+    for (const mark of marks) {
+      const parent = mark.parentNode;
+      mark.replaceWith(...mark.childNodes);
+      parent.normalize();
+    }
+    marks = [];
+    current = -1;
+  }
+
+  function go(index) {
+    if (!marks.length) return;
+    marks[current]?.classList.remove('current');
+    current = (index + marks.length) % marks.length;
+    marks[current].classList.add('current');
+    marks[current].scrollIntoView({ block: 'center' });
+    count.textContent = `${current + 1} of ${marks.length}`;
+  }
+
+  function search() {
+    clear();
+    const term = input.value.trim().toLowerCase();
+    searched = term;
+    if (term.length >= 2) {
+      const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT, {
+        acceptNode: (node) => node.parentElement.closest('.topbar, style, script') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
+      });
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      for (let node of nodes) {
+        let at;
+        while ((at = node.data.toLowerCase().indexOf(term)) !== -1) {
+          const hit = node.splitText(at);
+          node = hit.splitText(term.length);
+          const mark = document.createElement('mark');
+          hit.replaceWith(mark);
+          mark.append(hit);
+          marks.push(mark);
+        }
+      }
+    }
+    prev.disabled = next.disabled = marks.length < 2;
+    count.textContent = term.length >= 2 && !marks.length ? 'No matches' : '';
+    go(0);
+  }
+
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(search, 200);
+  });
+  // Enter steps to the next match (Shift+Enter goes back); Esc clears.
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    clearTimeout(timer);
+    if (input.value.trim().toLowerCase() !== searched) search();
+    else go(current + 1);
+  });
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && event.shiftKey) {
+      event.preventDefault();
+      go(current - 1);
+    } else if (event.key === 'Escape') {
+      input.value = '';
+      search();
+    }
+  });
+  prev.addEventListener('click', () => go(current - 1));
+  next.addEventListener('click', () => go(current + 1));
+})();
+</script>
